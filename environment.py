@@ -46,7 +46,7 @@ class AgentState:
     score: int = 0
 
 class Environment:
-    def __init__(self, size: int = 8, num_wumpus: int = 1, pit_prob: float = 0.2):
+    def __init__(self, size: int = 8, num_wumpus: int = 2, pit_prob: float = 0.2):
         self.size = size
         self.num_wumpus = num_wumpus
         self.pit_prob = pit_prob
