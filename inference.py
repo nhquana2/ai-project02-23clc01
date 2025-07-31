@@ -53,7 +53,7 @@ class KnowledgeBase:
         """
         Return True if KB ENTAILS query.
         query is L1 ∧ … ∧ Ln (conjunction of literals).
-        Implements PL-Resolution: KB AND ¬(L1 ∧ … ∧ Ln) ENTAILS empty.
+        Implements PL-Resolution: KB AND ~(L1 ∧ … ∧ Ln) ENTAILS empty.
         """
         # negate the conjunction of query literals as a single clause: ¬(L1∧...∧Ln) = ¬L1 ∨ ... ∨ ¬Ln
         negated_query_clause = frozenset(negate_literal(lit) for lit in query)

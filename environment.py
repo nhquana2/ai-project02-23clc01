@@ -82,7 +82,7 @@ class Environment:
         percept = Percept()
         x, y = self.agent_state.x, self.agent_state.y
 
-        adjacent = [(x+1, y), (x-1, y), (x, y+1), (x, y-1)]
+        adjacent = [(x + direction.value[0], y + direction.value[1]) for direction in Direction]
 
         for adj_x, adj_y in adjacent:
             if 0 <= adj_x < self.size and 0 <= adj_y < self.size:
@@ -118,6 +118,7 @@ class Environment:
         elif action == Action.GRAB:
             if (self.agent_state.x, self.agent_state.y) == self.gold_position:
                 self.agent_state.has_gold = True
+                self.gold_position = None # Gold is picked up
                 self.agent_state.score += 10
 
         elif action == Action.SHOOT:
