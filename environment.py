@@ -136,6 +136,7 @@ class Environment:
         # Check dead 
         pos = (self.agent_state.x, self.agent_state.y)
         if pos in self.wumpus_positions or pos in self.pit_positions:
+            print(f"Agent died at position {pos}.")
             self.agent_state.alive = False
             self.agent_state.score -= 1000
         

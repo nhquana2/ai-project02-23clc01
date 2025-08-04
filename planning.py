@@ -16,17 +16,47 @@ class Planner:
         """Manhattan distance heuristic"""
         return abs(pos[0] - goal[0]) + abs(pos[1] - goal[1])
     
-    def _get_action_cost(self, action: Action, next_pos: Tuple[int, int]) -> int:
-        """Cost of moving to the next position"""
-        cost = 1
+    def _get_action_cost(self, action: Action, next_pos: Tuple[int, int]) -> float:
+        """Cost of moving to the next position, factoring risk for unknown cells."""
+        cost = 1.0
         if action == Action.FORWARD:
             cell = self.map_knowledge.get_cell(next_pos[0], next_pos[1])
             if cell.status == CellStatus.WUMPUS or cell.status == CellStatus.PIT:
                 return float('inf')
-            
             if cell.status == CellStatus.UNKNOWN:
-                return 1 + self.RISK_PENALTY
+                risk = self._estimate_cell_risk(next_pos[0], next_pos[1])
+                # Risk penalty scales with estimated risk
+                return cost + self.RISK_PENALTY * risk
         return cost
+    def _estimate_cell_risk(self, x: int, y: int) -> float:
+        cell = self.map_knowledge.get_cell(x, y)
+        if cell.status != CellStatus.UNKNOWN:
+            return 0.0
+        neighbors = self.map_knowledge.get_neighbors(x, y)
+        risk = 0.0
+        for nx, ny in neighbors:
+            neighbor_cell = self.map_knowledge.get_cell(nx, ny)
+            if neighbor_cell.stench:
+                risk += 0.5
+            if neighbor_cell.breeze:
+                risk += 0.5
+        # normalize
+        risk = min(risk / max(1, len(neighbors)), 1.0)
+        return risk
+    
+    def find_least_risky_unknown(self, agent_x: int, agent_y: int) -> Optional[Tuple[int, int]]:
+        """Find the least risky unknown cell to gamble on."""
+        min_risk = float('inf')
+        best_cell = None
+        for (x, y), cell in self.map_knowledge.grid.items():
+            if cell.status == CellStatus.UNKNOWN and not cell.visited:
+                risk = self._estimate_cell_risk(x, y)
+                # prefer closer cells if risk is equal
+                dist = abs(x - agent_x) + abs(y - agent_y)
+                if risk < min_risk or (risk == min_risk and (best_cell is None or dist < abs(best_cell[0] - agent_x) + abs(best_cell[1] - agent_y))):
+                    min_risk = risk
+                    best_cell = (x, y)
+        return best_cell
     
     def _reconstruct_path(self, came_from: Dict, current: SearchState) -> List[Action]:
         """Reconstruct the path from start to goal"""

@@ -69,14 +69,18 @@ class HybridAgent:
             if cell.status == CellStatus.SAFE and not cell.visited:
                 unvisited_safe_cells.append((x, y))
 
-        if not unvisited_safe_cells:
-            return None
+        if unvisited_safe_cells:
+            unvisited_safe_cells.sort(key=lambda pos: abs(pos[0] - self.state.x) + abs(pos[1] - self.state.y))
+            target_pos = unvisited_safe_cells[0]
+            print(f"New exploration target: {target_pos}")
+            return self.planner.find_path(self.state, target_pos)
 
-        unvisited_safe_cells.sort(key=lambda pos: abs(pos[0] - self.state.x) + abs(pos[1] - self.state.y))
-        target_pos = unvisited_safe_cells[0]
-        
-        print(f"New exploration target: {target_pos}")
-        return self.planner.find_path(self.state, target_pos)
+        #risk if no safe cells
+        risky_target = self.planner.find_least_risky_unknown(self.state.x, self.state.y)
+        if risky_target:
+            print(f"Gambling: least risky unknown target: {risky_target}")
+            return self.planner.find_path(self.state, risky_target)
+        return None
 
     def _update_state(self, action: Action, percept: Percept):
         if action == Action.TURN_LEFT:
