@@ -9,7 +9,7 @@ if __name__ == "__main__":
     print("Wumpus World Auto Solver with Visualization")
     
     # Create environment
-    env = Environment(size=8, num_wumpus=1, pit_prob=0.1)
+    env = Environment(size=8, num_wumpus=1, pit_prob=0.1, moving_wumpus_mode=True)
     agent = HybridAgent(env)
     
     pygame.init()

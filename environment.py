@@ -46,10 +46,12 @@ class AgentState:
     score: int = 0
 
 class Environment:
-    def __init__(self, size: int = 8, num_wumpus: int = 2, pit_prob: float = 0.2):
+    def __init__(self, size: int = 8, num_wumpus: int = 2, pit_prob: float = 0.2, moving_wumpus_mode: bool = False):
         self.size = size
         self.num_wumpus = num_wumpus
         self.pit_prob = pit_prob
+        self.moving_wumpus_mode = moving_wumpus_mode 
+        self.agent_action_count = 0
         self.reset()
 
     def reset(self):
@@ -57,6 +59,7 @@ class Environment:
         self.pit_positions = set()
         self.gold_position = None
         self.agent_state = AgentState()
+        self.agent_action_count = 0  # Reset action counter
         self._generate_world()
     
     def _generate_world(self):
@@ -96,6 +99,46 @@ class Environment:
 
         return percept
 
+    def _move_wumpuses(self):
+        """Move all wumpuses according to the moving wumpus rules"""
+        if not self.moving_wumpus_mode:
+            return 
+            
+        # Convert set to list for iteration and modification
+        wumpus_list = list(self.wumpus_positions)
+        new_wumpus_positions = set()
+        
+        for wumpus_pos in wumpus_list:
+            new_pos = self._get_valid_wumpus_move(wumpus_pos)
+            new_wumpus_positions.add(new_pos)
+        
+        # Update wumpus positions
+        self.wumpus_positions = new_wumpus_positions
+    
+    def _get_valid_wumpus_move(self, current_pos: tuple[int, int]) -> tuple[int, int]:
+        """Get a valid move for a wumpus from its current position"""
+        x, y = current_pos
+        
+        adjacent_positions = [
+            (x, y + 1),  # North
+            (x, y - 1),  # South
+            (x + 1, y),  # East
+            (x - 1, y)   # West
+        ]
+        
+        # Filter valid positions
+        valid_moves = []
+        for new_x, new_y in adjacent_positions:
+            if 0 <= new_x < self.size and 0 <= new_y < self.size:
+                if (new_x, new_y) not in self.wumpus_positions:
+                    if (new_x, new_y) not in self.pit_positions:
+                        valid_moves.append((new_x, new_y))
+        
+        if not valid_moves:
+            return current_pos
+        
+        return random.choice(valid_moves)
+
     def execute_action(self, action: Action) -> Percept:
         if not self.agent_state.alive:
             return Percept()
@@ -132,6 +175,11 @@ class Environment:
                 if self.agent_state.has_gold:
                     self.agent_state.score += 1000
                 self.agent_state.alive = False  # Game ends
+        
+        self.agent_action_count += 1
+        
+        if self.moving_wumpus_mode and self.agent_action_count % 5 == 0:
+            self._move_wumpuses()
         
         # Check dead 
         pos = (self.agent_state.x, self.agent_state.y)
@@ -197,3 +245,5 @@ class Environment:
                 row.append(cell.center(3))
             print(" ".join(row))
         print(f"Score: {self.agent_state.score}, Arrow: {self.agent_state.has_arrow}, Gold: {self.agent_state.has_gold}")
+        if self.moving_wumpus_mode:
+            print(f"Moving Wumpus Mode: Action Count: {self.agent_action_count}")
