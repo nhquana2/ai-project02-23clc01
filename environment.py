@@ -188,6 +188,7 @@ class Environment:
         
         if self.moving_wumpus_mode and self.agent_action_count % 5 == 0:
             self._move_wumpuses()
+            print(f"Wumpus moved to {self.wumpus_positions}")
         
         # Check dead 
         pos = (self.agent_state.x, self.agent_state.y)
