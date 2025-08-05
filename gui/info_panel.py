@@ -1,33 +1,22 @@
 import pygame
-import os
 from environment import Environment
 from hybrid_agent import HybridAgent
+from gui.menu.button import Button
 
 class InfoPanel:
-    """Handles rendering of game information panel"""
+    """Game information panel with pause functionality"""
     
     def __init__(self, width: int, height: int, font_size: int = 16):
         self.width = width
         self.height = height
         self.surface = pygame.Surface((width, height))
+        self.pause_callback = None
         
-        # Load fonts with fallback
-        font_path = self._get_font_path()
-        try:
-            if font_path and os.path.exists(font_path):
-                self.title_font = pygame.font.Font(font_path, font_size + 8)
-                self.large_font = pygame.font.Font(font_path, font_size + 4)
-                self.text_font = pygame.font.Font(font_path, font_size)
-            else:
-                # Fallback to default fonts
-                self.title_font = pygame.font.Font(None, font_size + 8)
-                self.large_font = pygame.font.Font(None, font_size + 4)
-                self.text_font = pygame.font.Font(None, font_size)
-        except pygame.error:
-            # Fallback to default fonts if custom font fails
-            self.title_font = pygame.font.Font(None, font_size + 8)
-            self.large_font = pygame.font.Font(None, font_size + 4)
-            self.text_font = pygame.font.Font(None, font_size)
+        # Load assets directly
+        self.title_font = pygame.font.Font("assets/font/Grand9KPixel.ttf", font_size + 8)
+        self.large_font = pygame.font.Font("assets/font/Grand9KPixel.ttf", font_size + 4)
+        self.text_font = pygame.font.Font("assets/font/Grand9KPixel.ttf", font_size)
+        self.pause_button_img = pygame.image.load("assets/buttons/gray_button.png")
         
         # Colors
         self.bg_color = (45, 45, 45)
@@ -37,75 +26,113 @@ class InfoPanel:
         self.highlight_color = (255, 255, 100)
         self.good_color = (100, 255, 100)
         self.bad_color = (255, 100, 100)
+        
+        # Create pause button
+        button_width, button_height = 120, 40
+        self.pause_button = Button(
+            (width - button_width) // 2, height - 60,
+            button_width, button_height, self.pause_button_img,
+            "PAUSE", 16, (255, 255, 255), self._on_pause_clicked
+        )
     
-    def _get_font_path(self):
-        """Get path to custom font with proper error handling"""
-        current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        font_path = os.path.join(current_dir, "assets", "font", "Grand9KPixel.ttf")
-        return font_path if os.path.exists(font_path) else None
+    def _on_pause_clicked(self):
+        if self.pause_callback:
+            self.pause_callback()
+    
+    def set_pause_callback(self, callback):
+        self.pause_callback = callback
     
     def draw(self, env: Environment, agent: HybridAgent, step_count: int, current_percepts):
-        """Draw the info panel with current percepts"""
-        # Clear surface
         self.surface.fill(self.bg_color)
-        
-        # Draw border
         pygame.draw.rect(self.surface, self.border_color, (0, 0, self.width, self.height), 3)
         
+        y = 20
         # Title
-        y_pos = 20
-        title_text = self.title_font.render("CURRENT PERCEPTS", True, self.title_color)
-        title_rect = title_text.get_rect(centerx=self.width // 2)
-        self.surface.blit(title_text, (title_rect.x, y_pos))
+        title = self.title_font.render("GAME INFO", True, self.title_color)
+        self.surface.blit(title, (title.get_rect(centerx=self.width // 2).x, y))
+        y += 50
         
-        # Current percepts display
-        self._draw_large_percepts(current_percepts, y_pos + 60)
+        # Score
+        score = self.large_font.render(f"SCORE: {env.agent_state.score}", True, self.highlight_color)
+        self.surface.blit(score, (score.get_rect(centerx=self.width // 2).x, y))
+        y += 40
+        
+        # Step
+        step = self.text_font.render(f"STEP: {step_count}", True, self.text_color)
+        self.surface.blit(step, (step.get_rect(centerx=self.width // 2).x, y))
+        y += 30
+        
+        # Mode
+        if hasattr(env, 'moving_wumpus_mode'):
+            mode_text = "MODE: DYNAMIC" if env.moving_wumpus_mode else "MODE: STATIC"
+            mode_color = self.good_color if env.moving_wumpus_mode else self.text_color
+            mode = self.text_font.render(mode_text, True, mode_color)
+            self.surface.blit(mode, (mode.get_rect(centerx=self.width // 2).x, y))
+        y += 30
+        
+        # Agent type
+        agent_type = "RANDOM" if 'Random' in str(type(agent).__name__) else "HYBRID"
+        agent_color = self.highlight_color if agent_type == "RANDOM" else self.good_color
+        agent_text = self.text_font.render(f"AGENT: {agent_type}", True, agent_color)
+        self.surface.blit(agent_text, (agent_text.get_rect(centerx=self.width // 2).x, y))
+        y += 40
+        
+        # Percepts title
+        percepts_title = self.title_font.render("CURRENT PERCEPTS", True, self.title_color)
+        self.surface.blit(percepts_title, (percepts_title.get_rect(centerx=self.width // 2).x, y))
+        y += 50
+        
+        # Draw percepts
+        self._draw_percepts(current_percepts, y)
+        
+        # Draw pause button
+        self.pause_button.draw(self.surface)
     
-    def _draw_large_percepts(self, current_percepts, y_pos: int):
-        """Draw current percepts in large format"""
-        if not current_percepts:
+    def _draw_percepts(self, percepts, y_pos):
+        if not percepts:
             return
         
-        percepts = [
-            ("STENCH", current_percepts.stench, self.bad_color),
-            ("BREEZE", current_percepts.breeze, self.bad_color),
-            ("GLITTER", current_percepts.glitter, self.good_color),
-            ("BUMP", current_percepts.bump, self.highlight_color),
-            ("SCREAM", current_percepts.scream, self.good_color)
+        percept_data = [
+            ("STENCH", percepts.stench, self.bad_color),
+            ("BREEZE", percepts.breeze, self.bad_color),
+            ("GLITTER", percepts.glitter, self.good_color),
+            ("BUMP", percepts.bump, self.highlight_color),
+            ("SCREAM", percepts.scream, self.good_color)
         ]
         
-        # Calculate spacing
-        percept_height = 80
-        start_y = y_pos + (self.height - y_pos - len(percepts) * percept_height) // 2
-        
-        for i, (name, value, active_color) in enumerate(percepts):
-            current_y = start_y + i * percept_height
-            
-            # Background for each percept
-            percept_bg_color = (60, 60, 60) if value else (30, 30, 30)
-            percept_rect = pygame.Rect(15, current_y, self.width - 30, percept_height - 10)
-            pygame.draw.rect(self.surface, percept_bg_color, percept_rect, border_radius=5)
+        for i, (name, value, color) in enumerate(percept_data):
+            y = y_pos + i * 60
+            if y + 50 > self.height - 80:  # Leave space for pause button
+                break
+                
+            # Background
+            bg_color = (60, 60, 60) if value else (30, 30, 30)
+            rect = pygame.Rect(15, y, self.width - 30, 50)
+            pygame.draw.rect(self.surface, bg_color, rect, border_radius=5)
             
             if value:
-                # Active percept - draw border
-                pygame.draw.rect(self.surface, active_color, percept_rect, 3, border_radius=5)
+                pygame.draw.rect(self.surface, color, rect, 3, border_radius=5)
             
-            # Percept name and status
-            text_color = active_color if value else self.text_color
-            status_text = "true" if value else "false"
+            # Text
+            text_color = color if value else self.text_color
+            name_text = self.text_font.render(name, True, text_color)
+            status_text = self.text_font.render("true" if value else "false", True, text_color)
             
-            # Large percept name
-            name_text = self.large_font.render(name, True, text_color)
-            name_x = 30
-            name_y = current_y + 15
-            self.surface.blit(name_text, (name_x, name_y))
-            
-            # Status text
-            status_text_surface = self.text_font.render(status_text, True, text_color)
-            status_x = 30
-            status_y = current_y + 45
-            self.surface.blit(status_text_surface, (status_x, status_y))
+            self.surface.blit(name_text, (30, y + 10))
+            self.surface.blit(status_text, (30, y + 30))
+    
+    def handle_event(self, event, offset_x=0, offset_y=0):
+        """Handle events for the info panel (mainly pause button)"""
+        if offset_x or offset_y:
+            # Adjust event position for offset
+            if hasattr(event, 'pos'):
+                adjusted_event = type(event)(event.type, event.dict)
+                adjusted_event.pos = (event.pos[0] - offset_x, event.pos[1] - offset_y)
+                return self.pause_button.handle_event(adjusted_event)
+        return self.pause_button.handle_event(event)
+    
+    def update(self):
+        self.pause_button.update()
     
     def get_surface(self):
-        """Get the info panel surface"""
         return self.surface

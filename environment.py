@@ -60,6 +60,7 @@ class Environment:
         self.gold_position = None
         self.agent_state = AgentState()
         self.agent_action_count = 0  # Reset action counter
+        self.wumpus_directions = {}  # Track direction for each wumpus position
         self._generate_world()
     
     def _generate_world(self):
@@ -68,6 +69,8 @@ class Environment:
             pos = (random.randint(0, self.size-1), random.randint(0, self.size-1))
             if pos != (0, 0):
                 self.wumpus_positions.add(pos)
+                # Initialize wumpus direction randomly
+                self.wumpus_directions[pos] = Direction.SOUTH 
             
         # Generate pits
         for x in range(self.size):
@@ -107,35 +110,40 @@ class Environment:
         # Convert set to list for iteration and modification
         wumpus_list = list(self.wumpus_positions)
         new_wumpus_positions = set()
+        new_wumpus_directions = {}
         
         for wumpus_pos in wumpus_list:
-            new_pos = self._get_valid_wumpus_move(wumpus_pos)
+            new_pos, direction = self._get_valid_wumpus_move(wumpus_pos)
             new_wumpus_positions.add(new_pos)
+            new_wumpus_directions[new_pos] = direction
         
-        # Update wumpus positions
+        # Update wumpus positions and directions
         self.wumpus_positions = new_wumpus_positions
+        self.wumpus_directions = new_wumpus_directions
     
-    def _get_valid_wumpus_move(self, current_pos: tuple[int, int]) -> tuple[int, int]:
-        """Get a valid move for a wumpus from its current position"""
+    def _get_valid_wumpus_move(self, current_pos: tuple[int, int]) -> tuple[tuple[int, int], Direction]:
+        """Get a valid move for a wumpus from its current position and return new position with direction"""
         x, y = current_pos
         
-        adjacent_positions = [
-            (x, y + 1),  # North
-            (x, y - 1),  # South
-            (x + 1, y),  # East
-            (x - 1, y)   # West
+        adjacent_moves = [
+            ((x, y + 1), Direction.NORTH),   # North
+            ((x, y - 1), Direction.SOUTH),   # South
+            ((x + 1, y), Direction.EAST),    # East
+            ((x - 1, y), Direction.WEST)     # West
         ]
         
         # Filter valid positions
         valid_moves = []
-        for new_x, new_y in adjacent_positions:
+        for (new_x, new_y), direction in adjacent_moves:
             if 0 <= new_x < self.size and 0 <= new_y < self.size:
                 if (new_x, new_y) not in self.wumpus_positions:
                     if (new_x, new_y) not in self.pit_positions:
-                        valid_moves.append((new_x, new_y))
+                        valid_moves.append(((new_x, new_y), direction))
         
         if not valid_moves:
-            return current_pos
+            # If no valid moves, keep current position and direction
+            current_direction = self.wumpus_directions.get(current_pos, Direction.SOUTH)
+            return current_pos, current_direction
         
         return random.choice(valid_moves)
 
