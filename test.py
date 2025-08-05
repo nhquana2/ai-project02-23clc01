@@ -7,7 +7,11 @@ def run_menu_loop():
     menu_width, menu_height = 1200, 640
     screen = pygame.display.set_mode((menu_width, menu_height))
     menu = MainMenu(menu_width, menu_height)
+    
+    # Reset and refresh menu state
     menu.reset_state()
+    menu.force_refresh()
+    
     clock = pygame.time.Clock()
     
     while True:
@@ -46,6 +50,9 @@ def main():
     game_controller = GameController(1200, 640)  # Initial size, will be updated
     
     while True:
+        # Reset game controller state before showing menu
+        game_controller.reset_controller_state()
+        
         # Run menu and get settings
         settings, should_quit = run_menu_loop()
         

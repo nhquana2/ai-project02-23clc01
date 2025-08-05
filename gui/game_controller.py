@@ -29,10 +29,11 @@ class GameController:
 
     def _load_assets(self):
         """Load fonts and button images"""
+        font_path = "assets/font/Grand9KPixel.ttf"
         self.green_button_img = pygame.image.load("assets/buttons/yellow_button.png")
         self.red_button_img = pygame.image.load("assets/buttons/red_button.png")
-        self.title_font = pygame.font.Font("assets/font/Grand9KPixel.ttf", 32)
-        self.text_font = pygame.font.Font("assets/font/Grand9KPixel.ttf", 20)
+        self.title_font = pygame.font.Font(font_path, 32)
+        self.text_font = pygame.font.Font(font_path, 20)
         
         # Colors
         self.title_color = (255, 255, 255)
@@ -48,25 +49,20 @@ class GameController:
 
     def _create_buttons(self):
         """Create pause menu buttons"""
-        button_width, button_height = 150, 50
-        button_spacing = 20
+        btn_w, btn_h = 150, 50
         center_x = self.menu_x + self.menu_width // 2
-        button_y = self.menu_y + self.menu_height - 80
-        
-        # Calculate button positions
-        total_width = 2 * button_width + button_spacing
-        start_x = center_x - total_width // 2
+        btn_y = self.menu_y + self.menu_height - 80
+        start_x = center_x - (2 * btn_w + 20) // 2
         
         self.resume_button = Button(
-            start_x, button_y, button_width, button_height,
-            self.green_button_img, "RESUME", 18, (255, 255, 255),
-            self._resume_game
+            start_x, btn_y, btn_w, btn_h, self.green_button_img, 
+            "RESUME", 18, (255, 255, 255), self._resume_game
         )
         
         self.menu_button = Button(
-            start_x + button_width + button_spacing, button_y, 
-            button_width, button_height, self.red_button_img, 
-            "MENU", 18, (255, 255, 255), self._return_to_menu
+            start_x + btn_w + 20, btn_y, btn_w, btn_h, 
+            self.red_button_img, "MENU", 18, (255, 255, 255), 
+            self._return_to_menu
         )
     
     def _resume_game(self):
@@ -82,6 +78,13 @@ class GameController:
         self.is_visible = True
         self.resume_game = False
         self.quit_to_menu = False
+
+    def reset_controller_state(self):
+        """Reset controller state for new game or returning to menu"""
+        self.is_visible = False
+        self.resume_game = False
+        self.quit_to_menu = False
+        print("Controller state reset - all flags cleared")
     
     def handle_event(self, event):
         if not self.is_visible:
@@ -113,15 +116,15 @@ class GameController:
         # Draw centered text
         center_x = self.menu_x + self.menu_width // 2
         
+        # Title
         title = self.title_font.render("GAME PAUSED", True, self.title_color)
-        title_rect = title.get_rect(centerx=center_x, y=self.menu_y + 30)
-        screen.blit(title, title_rect)
+        screen.blit(title, title.get_rect(centerx=center_x, y=self.menu_y + 30))
         
+        # Instruction
         instruction = self.text_font.render("Press ESC or click RESUME to continue", True, (200, 200, 200))
-        instruction_rect = instruction.get_rect(centerx=center_x, y=self.menu_y + 100)
-        screen.blit(instruction, instruction_rect)
+        screen.blit(instruction, instruction.get_rect(centerx=center_x, y=self.menu_y + 100))
         
-        # Draw buttons
+        # Buttons
         self.resume_button.draw(screen)
         self.menu_button.draw(screen)
     
@@ -147,27 +150,21 @@ class GameController:
         """Initialize all game components and return them"""
         from gui.menu import MainMenu
         
-        # Create environment based on settings
-        moving_wumpus_mode = (settings.environment_mode == MainMenu.EnvironmentMode.DYNAMIC) 
-        env = Environment(
-            size=settings.board_size, 
-            num_wumpus=settings.num_wumpus, 
-            pit_prob=settings.pit_probability, 
-            moving_wumpus_mode=moving_wumpus_mode
-        )
+        # Create environment
+        moving_wumpus = (settings.environment_mode == MainMenu.EnvironmentMode.DYNAMIC)
+        env = Environment(settings.board_size, settings.num_wumpus, settings.pit_probability, moving_wumpus)
         agent = self.create_agent(env, settings.agent_mode)
         
-        # Calculate screen dimensions
+        # Calculate dimensions
         cell_size = 80
         board_size = settings.board_size * cell_size
         info_panel_width = 480
         screen_width = board_size + info_panel_width + 20
-        screen_height = board_size
         info_panel_x = board_size + 10
         
-        # Resize screen and update controller layout
-        screen = pygame.display.set_mode((screen_width, screen_height))
-        self._update_for_new_screen_size(screen_width, screen_height)
+        # Update screen and controller
+        screen = pygame.display.set_mode((screen_width, board_size))
+        self._update_for_new_screen_size(screen_width, board_size)
         
         # Create GUI components
         board = Board(env, cell_size=cell_size, agent_knowledge=agent.knowledge)
@@ -210,8 +207,8 @@ class GameController:
         percepts = env.get_percept()
         
         # Print percept status
-        percept_status = [f"{attr}: {str(getattr(percepts, attr)).lower()}" 
-                         for attr in ['stench', 'breeze', 'glitter', 'bump', 'scream']]
+        percept_attrs = ['stench', 'breeze', 'glitter', 'bump', 'scream']
+        percept_status = [f"{attr}: {str(getattr(percepts, attr)).lower()}" for attr in percept_attrs]
         print(f"Step {step_count + 1}: {{{'; '.join(percept_status)}}}")
         
         # Execute agent action
@@ -228,11 +225,8 @@ class GameController:
         last_step_time = current_time
         
         # Check end conditions
-        if action == Action.CLIMB:
-            print(f"Agent climbed out! Final Score: {env.agent_state.score}")
-            return step_count, last_step_time, False
-        elif not agent.state.alive:
-            print(f"Agent died! Final Score: {env.agent_state.score}")
+        if action == Action.CLIMB or not agent.state.alive:
+            print(f"Agent {'climbed out' if action == Action.CLIMB else 'died'}! Final Score: {env.agent_state.score}")
             return step_count, last_step_time, False
         
         return step_count, last_step_time, True
@@ -257,6 +251,8 @@ class GameController:
 
     def run_game_with_settings(self, settings):
         """Run the game with given settings"""
+        self.reset_controller_state()
+        
         # Setup game components
         env, agent, screen, board, info_panel, info_panel_x = self.setup_game_components(settings)
         
@@ -284,6 +280,9 @@ class GameController:
             
             # Check pause menu actions
             if self.should_return_to_menu:
+                self.resume_game = False
+                self.quit_to_menu = False
+                self.is_visible = False
                 return True
             
             # Execute game logic if not paused
@@ -291,10 +290,11 @@ class GameController:
                 step_count, last_step_time, should_continue = self.execute_agent_step(
                     env, agent, step_count, current_time, last_step_time, step_delay
                 )
+                # Always update board after an action is executed
+                board.update(env, agent.knowledge)
+                
                 if not should_continue:
                     running = False
-                else:
-                    board.update(env, agent.knowledge)
             
             # Render everything
             self.render_game(screen, board, info_panel, env, agent, step_count, info_panel_x)

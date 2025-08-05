@@ -30,6 +30,10 @@ class MainMenu:
         """Reset menu state when returning from game"""
         return self.logic.reset_state()
     
+    def force_refresh(self):
+        """Force refresh all UI elements"""
+        return self.logic.force_refresh()
+    
     def settings(self):
         return self.logic.settings
     

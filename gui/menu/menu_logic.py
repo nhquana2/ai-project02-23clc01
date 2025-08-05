@@ -77,6 +77,10 @@ class MenuLogic:
         """Create configuration control buttons (prev/value/next for each setting)"""
         config_buttons = []
         
+        # Helper function to create proper closures for callbacks
+        def make_callback(cb, delta_val):
+            return lambda: cb(delta_val)
+        
         # Configuration data: positions, callbacks, and current texts
         positions = [center_x - 150, center_x, center_x + 150]  # Board, Pit, Wumpus
         callbacks = [self._change_board_size, self._change_pit_probability, self._change_wumpus_count]
@@ -96,10 +100,10 @@ class MenuLogic:
             # Create button group: [prev] [value] [next]
             config_buttons.extend([
                 self.ui.create_button(pos - 70, config_y + 6, 25, 25, 'prev', "", 
-                                    lambda delta=delta_prev, cb=callback: cb(delta)),
+                                    make_callback(callback, delta_prev)),
                 self.ui.create_button(pos - 40, config_y, 80, 40, 'gray', text),
                 self.ui.create_button(pos + 45, config_y + 6, 25, 25, 'next', "", 
-                                    lambda delta=delta_next, cb=callback: cb(delta))
+                                    make_callback(callback, delta_next))
             ])
         
         return config_buttons
@@ -152,6 +156,21 @@ class MenuLogic:
         self.start_game = False
         self.quit_game = False
         self.is_visible = True
+        
+        # Reset all button interaction states
+        for button in self.buttons:
+            if hasattr(button, 'reset_state'):
+                button.reset_state()
+        
+        # Also reset button states to ensure proper display
+        self._update_button_states()
+        self._update_config_buttons()
+    
+    def force_refresh(self):
+        """Force refresh all UI elements - useful when returning from game"""
+        if self.is_visible:
+            self._update_button_states()
+            self._update_config_buttons()
     
     def _update_button_states(self):
         """Update button appearance based on current settings"""
@@ -186,9 +205,16 @@ class MenuLogic:
             return None
         
         for button in self.buttons:
-            if button.handle_event(event):
-                if button.callback == self._start_game:
-                    return self._start_game()
+            try:
+                if button.handle_event(event):
+                    # Check if this is the start game button
+                    if hasattr(button, 'callback') and button.callback == self._start_game:
+                        return self._start_game()
+                    # For other buttons, the callback is already executed by handle_event
+                    break
+            except Exception as e:
+                print(f"Error handling button event: {e}")
+                continue
         return None
     
     def update(self):

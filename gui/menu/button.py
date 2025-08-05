@@ -50,6 +50,12 @@ class Button:
     def set_selected(self, selected: bool):
         self.is_selected = selected
     
+    def reset_state(self):
+        """Reset button interaction state"""
+        self.is_hovered = False
+        self.is_pressed = False
+        # Note: is_selected is not reset as it represents logical state, not interaction state
+    
     def set_text(self, text: str):
         self.text = text
         if self.text:
