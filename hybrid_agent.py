@@ -42,7 +42,11 @@ class HybridAgent:
         self.knowledge.update_after_visit(self.state.x, self.state.y, percepts)
 
         inference_start_time = time.time()
-        self.inference_engine.run_inference()
+        self.inference_engine.run_inference(
+            (self.state.x, self.state.y),
+            self.environment.agent_action_count,
+            self.environment.moving_wumpus_mode
+        )
         inference_end_time = time.time()
 
         if percepts.glitter:
