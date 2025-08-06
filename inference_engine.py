@@ -67,17 +67,17 @@ class InferenceEngine:
             if cell is None or cell.visited:
                 continue
                 
-            # Check for confirmed pit and wumpus
-            is_pit = self.kb.ask(frozenset([(self._pos_to_symbol("P", x, y), True)]))
-            is_wumpus = self.kb.ask(frozenset([(self._pos_to_symbol("W", x, y), True)]))
-            
-            if is_pit:
+            # Check for confirmed pit
+            if self.kb.ask(frozenset([(self._pos_to_symbol("P", x, y), True)])):
                 self.knowledge.update_cell_status(x, y, CellStatus.PIT)
                 continue
-            if is_wumpus:
+            # Check for confirmed wumpus
+            if self.kb.ask(frozenset([(self._pos_to_symbol("W", x, y), True)])):
                 self.knowledge.update_cell_status(x, y, CellStatus.WUMPUS)
                 continue
 
-            # Check for safety (~P ∧ ~W) - reuse results from above
-            if not is_pit and not is_wumpus:
+            # Check for safety (~P ∧ ~W)
+            is_not_pit = self.kb.ask(frozenset([(self._pos_to_symbol("P", x, y), False)]))
+            is_not_wumpus = self.kb.ask(frozenset([(self._pos_to_symbol("W", x, y), False)]))
+            if is_not_pit and is_not_wumpus:
                 self.knowledge.update_cell_status(x, y, CellStatus.SAFE)
