@@ -107,17 +107,41 @@ class Environment:
         if not self.moving_wumpus_mode:
             return 
             
-        # Convert set to list for iteration and modification
         wumpus_list = list(self.wumpus_positions)
-        new_wumpus_positions = set()
-        new_wumpus_directions = {}
+        planned_moves = {} 
         
         for wumpus_pos in wumpus_list:
             new_pos, direction = self._get_valid_wumpus_move(wumpus_pos)
+            planned_moves[wumpus_pos] = (new_pos, direction)
+        
+        # Check for conflicts - identify which wumpuses are involved in collisions
+        target_positions = list(planned_moves.values())
+        target_cells = [pos for pos, _ in target_positions]
+        
+        # Count how many wumpuses want to move to each target cell
+        cell_counts = {}
+        for pos, _ in target_positions:
+            cell_counts[pos] = cell_counts.get(pos, 0) + 1
+        
+        # Find wumpuses involved in collisions (target cell has more than 1 wumpus)
+        collision_wumpuses = set()
+        for wumpus_pos in wumpus_list:
+            new_pos, _ = planned_moves[wumpus_pos]
+            if cell_counts[new_pos] > 1:
+                collision_wumpuses.add(wumpus_pos)
+        
+        # Only wumpuses involved in collisions stay in place
+        for wumpus_pos in collision_wumpuses:
+            planned_moves[wumpus_pos] = (wumpus_pos, self.wumpus_directions[wumpus_pos])
+        
+        # Update wumpus positions and directions
+        new_wumpus_positions = set()
+        new_wumpus_directions = {}
+        
+        for wumpus_pos, (new_pos, direction) in planned_moves.items():
             new_wumpus_positions.add(new_pos)
             new_wumpus_directions[new_pos] = direction
         
-        # Update wumpus positions and directions
         self.wumpus_positions = new_wumpus_positions
         self.wumpus_directions = new_wumpus_directions
     
@@ -132,20 +156,17 @@ class Environment:
             ((x - 1, y), Direction.WEST)     # West
         ]
         
-        # Filter valid positions
-        valid_moves = []
-        for (new_x, new_y), direction in adjacent_moves:
-            if 0 <= new_x < self.size and 0 <= new_y < self.size:
-                if (new_x, new_y) not in self.wumpus_positions:
-                    if (new_x, new_y) not in self.pit_positions:
-                        valid_moves.append(((new_x, new_y), direction))
+        # Pick a random
+        (new_x, new_y), random_direction = random.choice(adjacent_moves)
         
-        if not valid_moves:
-            # If no valid moves, keep current position and direction
-            current_direction = self.wumpus_directions.get(current_pos, Direction.SOUTH)
-            return current_pos, current_direction
+        # Check can move to
+        if 0 <= new_x < self.size and 0 <= new_y < self.size:
+            if (new_x, new_y) not in self.wumpus_positions:
+                if (new_x, new_y) not in self.pit_positions:
+                    return (new_x, new_y), random_direction
         
-        return random.choice(valid_moves)
+        # If the random direction is not valid, stay in current position with current direction
+        return current_pos, self.wumpus_directions[current_pos]
 
     def execute_action(self, action: Action) -> Percept:
         if not self.agent_state.alive:

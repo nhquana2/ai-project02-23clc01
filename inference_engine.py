@@ -58,7 +58,6 @@ class InferenceEngine:
         
         if agent_pos is not None:
             query_cells = self.knowledge.get_neighbors(agent_pos[0], agent_pos[1])
-            query_cells.append(agent_pos)
         else:
             query_cells = [(x, y) for (x, y), cell in self.knowledge.grid.items() if not cell.visited]
         
@@ -68,17 +67,17 @@ class InferenceEngine:
             if cell is None or cell.visited:
                 continue
                 
-            # Check for confirmed pit
-            if self.kb.ask(frozenset([(self._pos_to_symbol("P", x, y), True)])):
+            # Check for confirmed pit and wumpus
+            is_pit = self.kb.ask(frozenset([(self._pos_to_symbol("P", x, y), True)]))
+            is_wumpus = self.kb.ask(frozenset([(self._pos_to_symbol("W", x, y), True)]))
+            
+            if is_pit:
                 self.knowledge.update_cell_status(x, y, CellStatus.PIT)
                 continue
-            # Check for confirmed wumpus
-            if self.kb.ask(frozenset([(self._pos_to_symbol("W", x, y), True)])):
+            if is_wumpus:
                 self.knowledge.update_cell_status(x, y, CellStatus.WUMPUS)
                 continue
 
-            # Check for safety (~P ∧ ~W)
-            is_not_pit = self.kb.ask(frozenset([(self._pos_to_symbol("P", x, y), False)]))
-            is_not_wumpus = self.kb.ask(frozenset([(self._pos_to_symbol("W", x, y), False)]))
-            if is_not_pit and is_not_wumpus:
+            # Check for safety (~P ∧ ~W) - reuse results from above
+            if not is_pit and not is_wumpus:
                 self.knowledge.update_cell_status(x, y, CellStatus.SAFE)
