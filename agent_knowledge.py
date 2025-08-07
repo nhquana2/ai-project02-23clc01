@@ -62,16 +62,30 @@ class MapKnowledge:
         self.num_wumpus -= 1
     
     def reset_wumpus_knowledge(self):
-        for (x, y), cell in self.grid.items():
+        # 1. Reset vị trí Wumpus cũ và tất cả dữ liệu stench
+        for cell in self.grid.values():
             if cell.visited:
                 cell.stench = None
-                # cell.visited = False
-            
             if cell.status == CellStatus.WUMPUS:
                 cell.status = CellStatus.UNKNOWN
+        # 2. Thu thập danh sách các ô SAFE cần kiểm tra lại
+        safe_cells_to_recheck = [
+            (x, y) for (x, y), cell in self.grid.items() if cell.status == CellStatus.SAFE
+        ]
 
-            if cell.status == CellStatus.SAFE:
-                cell.status = CellStatus.UNKNOWN
+        # 3. Chỉ hạ cấp những ô SAFE nằm ở edge của vùng kiến thức
+        for x, y in safe_cells_to_recheck:
+            is_near_unknown = False
+            for nx, ny in self.get_neighbors(x, y):
+                neighbor_cell = self.get_cell(nx, ny)
+                if neighbor_cell and neighbor_cell.status == CellStatus.UNKNOWN:
+                    is_near_unknown = True
+                    break
+
+            # Nếu ô SAFE này nằm cạnh một mối nguy hiểm tiềm tàng (UNKNOWN),
+            # sự an toàn của nó không còn được đảm bảo.
+            if is_near_unknown:
+                self.get_cell(x, y).status = CellStatus.UNKNOWN
     
     def display_agent_view(self, agent_pos: Tuple[int, int], agent_dir: Enum):
         print("\n" + "="*20 + " Agent's Knowledge " + "="*20)
@@ -88,33 +102,3 @@ class MapKnowledge:
                     cell = self.get_cell(x, y)
                     row.append(f" {cell.status.value} ")
             print(" ".join(row))
-
-
-    def smart_reset(self):
-        """
-        Thực hiện reset kiến thức một cách thông minh khi Wumpus di chuyển.
-        Không thay đổi cờ 'visited'.
-        """
-        # 1. Tìm tất cả các ô có thể có Wumpus (là các ô UNKNOWN)
-        potential_wumpus_neighbors = set()
-        for (x, y), cell in self.grid.items():
-            # Quên vị trí Wumpus cũ và tất cả dữ liệu stench
-            if cell.status == CellStatus.WUMPUS:
-                cell.status = CellStatus.UNKNOWN
-            cell.stench = None
-
-            # Nếu một ô là UNKNOWN, các hàng xóm của nó cần được xem xét lại
-            if cell.status == CellStatus.UNKNOWN:
-                neighbors = self.get_neighbors(x, y)
-                for nx, ny in neighbors:
-                    potential_wumpus_neighbors.add((nx, ny))
-
-        # 2. "Hạ cấp" các ô SAFE liền kề với khu vực UNKNOWN
-        # Đây là bước then chốt!
-        for x, y in potential_wumpus_neighbors:
-            cell = self.get_cell(x, y)
-            # Nếu một ô đã từng được cho là an toàn (SAFE) nhưng bây giờ nó lại
-            # nằm cạnh một ô UNKNOWN, thì sự an toàn của nó không còn chắc chắn 100%.
-            # Chúng ta hạ cấp nó về UNKNOWN để hệ suy luận và lập kế hoạch xử lý lại.
-            if cell.status == CellStatus.SAFE:
-                cell.status = CellStatus.UNKNOWN

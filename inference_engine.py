@@ -44,7 +44,8 @@ class InferenceEngine:
         # In moving wumpus mode, reset KB every 5 actions (when wumpus moves)
         print(f"Action count: {action_count}")
         if moving_wumpus_mode and action_count > 0 and action_count % 5 == 0:
-            self.reset()
+            self.kb = None
+            self.processed_cells.clear()
             print("Resetting KB and wumpus-related knowledge")
             self.knowledge.reset_wumpus_knowledge()
         
@@ -86,7 +87,3 @@ class InferenceEngine:
             is_not_wumpus = self.kb.ask(frozenset([(self._pos_to_symbol("W", x, y), False)]))
             if is_not_pit and is_not_wumpus:
                 self.knowledge.update_cell_status(x, y, CellStatus.SAFE)
-
-    def reset(self):
-        self.kb = None
-        self.processed_cells.clear()
