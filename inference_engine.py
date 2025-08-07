@@ -7,6 +7,7 @@ class InferenceEngine:
         self.knowledge = knowledge
         self.kb: Optional[KnowledgeBase] = None
         self.processed_cells: Set[Tuple[int, int]] = set()
+        self.initial_kb_setup_done = False
 
     @staticmethod
     def _pos_to_symbol(prefix: str, x: int, y: int) -> str:
@@ -33,29 +34,33 @@ class InferenceEngine:
     def _initialize_kb(self):
         if self.kb is None:
             self.kb = KnowledgeBase()
-            # initial value
-            self.kb.tell(frozenset([(self._pos_to_symbol("P", 0, 0), False)]))
-            self.kb.tell(frozenset([(self._pos_to_symbol("W", 0, 0), False)]))
+            if not self.initial_kb_setup_done:
+                # Beginning state: (0,0) is safe
+                self.kb.tell(frozenset([(self._pos_to_symbol("P", 0, 0), False)]))
+                self.kb.tell(frozenset([(self._pos_to_symbol("W", 0, 0), False)]))
+                self.initial_kb_setup_done = True
 
     def run_inference(self, agent_pos: tuple = None, action_count: int = 0, moving_wumpus_mode: bool = False):
         # In moving wumpus mode, reset KB every 5 actions (when wumpus moves)
         print(f"Action count: {action_count}")
         if moving_wumpus_mode and action_count > 0 and action_count % 5 == 0:
-            self.kb = None
-            self.processed_cells.clear()
-            print("Resetting KB")
+            self.reset()
+            print("Resetting KB and wumpus-related knowledge")
+            self.knowledge.reset_wumpus_knowledge()
         
         self._initialize_kb()
         
         # Add facts from visited cells
         for (x, y), cell in self.knowledge.grid.items():
             if cell.visited and (x, y) not in self.processed_cells:
+                # Always add pit information (pits are static)
                 self.kb.tell(frozenset([(self._pos_to_symbol("P", x, y), False)]))
-                self.kb.tell(frozenset([(self._pos_to_symbol("W", x, y), False)]))
                 self._add_biconditional(self.kb, "B", x, y, "P", cell.breeze)
+                self.kb.tell(frozenset([(self._pos_to_symbol("W", x, y), False)]))
                 self._add_biconditional(self.kb, "S", x, y, "W", cell.stench)
+                
                 self.processed_cells.add((x, y))
-        
+
         if agent_pos is not None:
             query_cells = self.knowledge.get_neighbors(agent_pos[0], agent_pos[1])
         else:
@@ -81,3 +86,7 @@ class InferenceEngine:
             is_not_wumpus = self.kb.ask(frozenset([(self._pos_to_symbol("W", x, y), False)]))
             if is_not_pit and is_not_wumpus:
                 self.knowledge.update_cell_status(x, y, CellStatus.SAFE)
+
+    def reset(self):
+        self.kb = None
+        self.processed_cells.clear()

@@ -13,6 +13,7 @@ class HybridAgent:
         self.planner = Planner(environment.size, self.knowledge)
         self.state = AgentState()
         self.action_plan: List[Action] = []
+        self.turn_count = 0
 
     def run(self):
         percepts = self.environment.get_percept()
@@ -39,6 +40,14 @@ class HybridAgent:
         print(f"\nGame Over. Final Score: {self.environment.agent_state.score}")
 
     def think(self, percepts: Percept):
+
+        self.turn_count += 1
+
+        if self.environment.moving_wumpus_mode and self.turn_count % 5 == 0:
+            print("!!! Wumpus has moved! Resetting knowledge. !!!")
+            self.knowledge.smart_reset()
+            self.inference_engine.reset()
+
         self.knowledge.update_after_visit(self.state.x, self.state.y, percepts)
 
         inference_start_time = time.time()
@@ -77,6 +86,26 @@ class HybridAgent:
             unvisited_safe_cells.sort(key=lambda pos: abs(pos[0] - self.state.x) + abs(pos[1] - self.state.y))
             target_pos = unvisited_safe_cells[0]
             print(f"New exploration target: {target_pos}")
+            return self.planner.find_path(self.state, target_pos)
+        
+        # ƯU TIÊN 2: TÁI KHẢO SÁT - Đi đến ô ĐÃ THĂM để thu thập thông tin mới
+        # Mục tiêu tốt nhất là một ô ĐÃ THĂM, an toàn, và kề với nhiều ô UNKNOWN nhất.
+        # Điều này tối đa hóa lượng thông tin mới (stench) có thể thu được.
+        rescout_targets = []
+        for (x, y), cell in self.knowledge.grid.items():
+            if cell.visited: # Chỉ xem xét các ô đã thăm
+                unknown_neighbors = 0
+                for nx, ny in self.knowledge.get_neighbors(x, y):
+                    if self.knowledge.get_cell(nx, ny).status == CellStatus.UNKNOWN:
+                        unknown_neighbors += 1
+                if unknown_neighbors > 0:
+                    # (số ô UNKNOWN hàng xóm, tọa độ)
+                    rescout_targets.append((-unknown_neighbors, (x, y))) # Dấu trừ để sort giảm dần
+
+        if rescout_targets:
+            rescout_targets.sort() # Sắp xếp để ưu tiên ô có nhiều hàng xóm UNKNOWN nhất
+            target_pos = rescout_targets[0][1]
+            print(f"Strategy: Re-scouting visited cell {target_pos} for new percepts.")
             return self.planner.find_path(self.state, target_pos)
 
         #risk if no safe cells

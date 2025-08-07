@@ -61,6 +61,18 @@ class MapKnowledge:
     def wumpus_is_dead(self):
         self.num_wumpus -= 1
     
+    def reset_wumpus_knowledge(self):
+        for (x, y), cell in self.grid.items():
+            if cell.visited:
+                cell.stench = None
+                # cell.visited = False
+            
+            if cell.status == CellStatus.WUMPUS:
+                cell.status = CellStatus.UNKNOWN
+
+            if cell.status == CellStatus.SAFE:
+                cell.status = CellStatus.UNKNOWN
+    
     def display_agent_view(self, agent_pos: Tuple[int, int], agent_dir: Enum):
         print("\n" + "="*20 + " Agent's Knowledge " + "="*20)
         for y in range(self.size - 1, -1, -1):
@@ -76,3 +88,33 @@ class MapKnowledge:
                     cell = self.get_cell(x, y)
                     row.append(f" {cell.status.value} ")
             print(" ".join(row))
+
+
+    def smart_reset(self):
+        """
+        Thực hiện reset kiến thức một cách thông minh khi Wumpus di chuyển.
+        Không thay đổi cờ 'visited'.
+        """
+        # 1. Tìm tất cả các ô có thể có Wumpus (là các ô UNKNOWN)
+        potential_wumpus_neighbors = set()
+        for (x, y), cell in self.grid.items():
+            # Quên vị trí Wumpus cũ và tất cả dữ liệu stench
+            if cell.status == CellStatus.WUMPUS:
+                cell.status = CellStatus.UNKNOWN
+            cell.stench = None
+
+            # Nếu một ô là UNKNOWN, các hàng xóm của nó cần được xem xét lại
+            if cell.status == CellStatus.UNKNOWN:
+                neighbors = self.get_neighbors(x, y)
+                for nx, ny in neighbors:
+                    potential_wumpus_neighbors.add((nx, ny))
+
+        # 2. "Hạ cấp" các ô SAFE liền kề với khu vực UNKNOWN
+        # Đây là bước then chốt!
+        for x, y in potential_wumpus_neighbors:
+            cell = self.get_cell(x, y)
+            # Nếu một ô đã từng được cho là an toàn (SAFE) nhưng bây giờ nó lại
+            # nằm cạnh một ô UNKNOWN, thì sự an toàn của nó không còn chắc chắn 100%.
+            # Chúng ta hạ cấp nó về UNKNOWN để hệ suy luận và lập kế hoạch xử lý lại.
+            if cell.status == CellStatus.SAFE:
+                cell.status = CellStatus.UNKNOWN
