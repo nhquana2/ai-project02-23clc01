@@ -11,12 +11,17 @@ class InfoPanel:
         self.height = height
         self.surface = pygame.Surface((width, height))
         self.pause_callback = None
+        self.menu_callback = None
+        self.game_over = False
+        self.game_over_message = ""
+        self.final_score = 0
         
         # Load assets directly
         self.title_font = pygame.font.Font("assets/font/Grand9KPixel.ttf", font_size + 8)
         self.large_font = pygame.font.Font("assets/font/Grand9KPixel.ttf", font_size + 4)
         self.text_font = pygame.font.Font("assets/font/Grand9KPixel.ttf", font_size)
         self.pause_button_img = pygame.image.load("assets/buttons/gray_button.png")
+        self.menu_button_img = pygame.image.load("assets/buttons/red_button.png")
         
         # Colors
         self.bg_color = (45, 45, 45)
@@ -34,18 +39,46 @@ class InfoPanel:
             button_width, button_height, self.pause_button_img,
             "PAUSE", 16, (255, 255, 255), self._on_pause_clicked
         )
+        
+        # Create menu button for game over (initially hidden)
+        self.menu_button = Button(
+            (width - button_width) // 2, height - 60,
+            button_width, button_height, self.menu_button_img,
+            "MENU", 16, (255, 255, 255), self._on_menu_clicked
+        )
     
     def _on_pause_clicked(self):
         if self.pause_callback:
             self.pause_callback()
     
+    def _on_menu_clicked(self):
+        if self.menu_callback:
+            self.menu_callback()
+    
     def set_pause_callback(self, callback):
         self.pause_callback = callback
     
+    def set_menu_callback(self, callback):
+        self.menu_callback = callback
+    
+    def set_game_over(self, message: str, final_score: int):
+        """Set game over state with message and final score"""
+        self.game_over = True
+        self.game_over_message = message
+        self.final_score = final_score
+    
     def draw(self, env: Environment, agent: HybridAgent, step_count: int, current_percepts):
+        # Force refresh surface every time for accurate score display
         self.surface.fill(self.bg_color)
         pygame.draw.rect(self.surface, self.border_color, (0, 0, self.width, self.height), 3)
         
+        if self.game_over:
+            self._draw_game_over()
+        else:
+            self._draw_normal_game_info(env, agent, step_count, current_percepts)
+    
+    def _draw_normal_game_info(self, env: Environment, agent: HybridAgent, step_count: int, current_percepts):
+        """Draw normal game information"""
         y = 20
         # Title
         title = self.title_font.render("GAME INFO", True, self.title_color)
@@ -53,7 +86,8 @@ class InfoPanel:
         y += 50
         
         # Score
-        score = self.large_font.render(f"SCORE: {env.agent_state.score}", True, self.highlight_color)
+        current_score = env.agent_state.score
+        score = self.large_font.render(f"SCORE: {current_score}", True, self.highlight_color)
         self.surface.blit(score, (score.get_rect(centerx=self.width // 2).x, y))
         y += 40
         
@@ -87,6 +121,41 @@ class InfoPanel:
         
         # Draw pause button
         self.pause_button.draw(self.surface)
+    
+    def _draw_game_over(self):
+        """Draw game over screen"""
+        y = 50
+        
+        # Game Over title
+        title = self.title_font.render("GAME OVER", True, self.bad_color)
+        self.surface.blit(title, (title.get_rect(centerx=self.width // 2).x, y))
+        y += 80
+        
+        # Game result message
+        message_color = self.good_color if "climbed" in self.game_over_message.lower() else self.bad_color
+        message = self.large_font.render(self.game_over_message, True, message_color)
+        self.surface.blit(message, (message.get_rect(centerx=self.width // 2).x, y))
+        y += 60
+        
+        # Final score
+        score_text = self.large_font.render(f"FINAL SCORE: {self.final_score}", True, self.highlight_color)
+        self.surface.blit(score_text, (score_text.get_rect(centerx=self.width // 2).x, y))
+        y += 80
+        
+        # Instructions
+        instruction1 = self.text_font.render("Game has ended!", True, self.text_color)
+        self.surface.blit(instruction1, (instruction1.get_rect(centerx=self.width // 2).x, y))
+        y += 30
+        
+        instruction2 = self.text_font.render("Click the button below to", True, self.text_color)
+        self.surface.blit(instruction2, (instruction2.get_rect(centerx=self.width // 2).x, y))
+        y += 25
+        
+        instruction3 = self.text_font.render("return to main menu", True, self.text_color)
+        self.surface.blit(instruction3, (instruction3.get_rect(centerx=self.width // 2).x, y))
+        
+        # Draw menu button
+        self.menu_button.draw(self.surface)
     
     def _draw_percepts(self, percepts, y_pos):
         if not percepts:
@@ -122,17 +191,27 @@ class InfoPanel:
             self.surface.blit(status_text, (30, y + 30))
     
     def handle_event(self, event, offset_x=0, offset_y=0):
-        """Handle events for the info panel (mainly pause button)"""
+        """Handle events for the info panel (pause button or menu button)"""
         if offset_x or offset_y:
             # Adjust event position for offset
             if hasattr(event, 'pos'):
                 adjusted_event = type(event)(event.type, event.dict)
                 adjusted_event.pos = (event.pos[0] - offset_x, event.pos[1] - offset_y)
-                return self.pause_button.handle_event(adjusted_event)
-        return self.pause_button.handle_event(event)
+                if self.game_over:
+                    return self.menu_button.handle_event(adjusted_event)
+                else:
+                    return self.pause_button.handle_event(adjusted_event)
+        
+        if self.game_over:
+            return self.menu_button.handle_event(event)
+        else:
+            return self.pause_button.handle_event(event)
     
     def update(self):
-        self.pause_button.update()
+        if self.game_over:
+            self.menu_button.update()
+        else:
+            self.pause_button.update()
     
     def get_surface(self):
         return self.surface

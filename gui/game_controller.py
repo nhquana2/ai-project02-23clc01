@@ -1,11 +1,12 @@
 import pygame
 import time
-from gui.menu.button import Button
 from environment import Environment, Action
 from hybrid_agent import HybridAgent
 from random_agent import RandomAgent
 from gui.board import Board
 from gui.info_panel import InfoPanel
+from gui.menu.button import Button
+from gui.menu import MainMenu
 
 class GameController:
     """Game state controller for pause/resume functionality"""
@@ -16,6 +17,7 @@ class GameController:
         self.is_visible = False
         self.resume_game = False
         self.quit_to_menu = False
+        self.game_over_menu_requested = False
         
         # Create overlay
         self.overlay = pygame.Surface((screen_width, screen_height))
@@ -73,6 +75,10 @@ class GameController:
         self.quit_to_menu = True
         self.is_visible = False
     
+    def _game_over_return_to_menu(self):
+        """Handle return to menu from game over screen"""
+        self.game_over_menu_requested = True
+    
     def show(self):
         """Show pause menu and reset state flags"""
         self.is_visible = True
@@ -84,6 +90,7 @@ class GameController:
         self.is_visible = False
         self.resume_game = False
         self.quit_to_menu = False
+        self.game_over_menu_requested = False
         print("Controller state reset - all flags cleared")
     
     def handle_event(self, event):
@@ -135,12 +142,14 @@ class GameController:
     @property 
     def should_return_to_menu(self):
         return self.quit_to_menu
+    
+    @property
+    def should_game_over_return_to_menu(self):
+        return self.game_over_menu_requested
 
     # Game management methods
     def create_agent(self, env, agent_mode):
         """Create agent based on selected mode"""
-        # Import here to avoid circular imports
-        from gui.menu import MainMenu
         if agent_mode == MainMenu.AgentMode.RANDOM:
             return RandomAgent(env)
         else:
@@ -148,7 +157,6 @@ class GameController:
 
     def setup_game_components(self, settings):
         """Initialize all game components and return them"""
-        from gui.menu import MainMenu
         
         # Create environment
         moving_wumpus = (settings.environment_mode == MainMenu.EnvironmentMode.DYNAMIC)
@@ -170,6 +178,7 @@ class GameController:
         board = Board(env, cell_size=cell_size, agent_knowledge=agent.knowledge)
         info_panel = InfoPanel(info_panel_width, board_size, font_size=14)
         info_panel.set_pause_callback(lambda: self.show())
+        info_panel.set_menu_callback(lambda: self._game_over_return_to_menu())
         
         return env, agent, screen, board, info_panel, info_panel_x
 
@@ -199,7 +208,7 @@ class GameController:
         
         return "normal"
 
-    def execute_agent_step(self, env, agent, step_count, current_time, last_step_time, step_delay):
+    def execute_agent_step(self, env, agent, step_count, current_time, last_step_time, step_delay, info_panel):
         """Execute one step of agent thinking and action"""
         if current_time - last_step_time < step_delay:
             return step_count, last_step_time, True
@@ -226,7 +235,15 @@ class GameController:
         
         # Check end conditions
         if action == Action.CLIMB or not agent.state.alive:
-            print(f"Agent {'climbed out' if action == Action.CLIMB else 'died'}! Final Score: {env.agent_state.score}")
+            if action == Action.CLIMB:
+                message = "Agent climbed out!"
+                print(f"Agent climbed out! Final Score: {env.agent_state.score}")
+            else:
+                message = "Agent died!"
+                print(f"Agent died! Final Score: {env.agent_state.score}")
+            
+            # Set game over state on info panel
+            info_panel.set_game_over(message, env.agent_state.score)
             return step_count, last_step_time, False
         
         return step_count, last_step_time, True
@@ -263,7 +280,7 @@ class GameController:
         step_count = 0
         clock = pygame.time.Clock()
         
-        while running and agent.state.alive:
+        while running:
             current_time = time.time()
             
             # Handle events
@@ -285,16 +302,22 @@ class GameController:
                 self.is_visible = False
                 return True
             
-            # Execute game logic if not paused
-            if not self.is_visible and agent.state.alive:
+            # Check game over menu action
+            if self.should_game_over_return_to_menu:
+                self.game_over_menu_requested = False
+                return True
+            
+            # Execute game logic if not paused and agent is alive
+            if not self.is_visible and agent.state.alive and not info_panel.game_over:
                 step_count, last_step_time, should_continue = self.execute_agent_step(
-                    env, agent, step_count, current_time, last_step_time, step_delay
+                    env, agent, step_count, current_time, last_step_time, step_delay, info_panel
                 )
                 # Always update board after an action is executed
                 board.update(env, agent.knowledge)
                 
                 if not should_continue:
-                    running = False
+                    # Game ended, but don't exit - wait for user to click menu button
+                    pass
             
             # Render everything
             self.render_game(screen, board, info_panel, env, agent, step_count, info_panel_x)

@@ -2,9 +2,12 @@ from gui.menu import MainMenu
 from gui.game_controller import GameController
 import pygame
 
+HEIGHT = 640
+WIDTH = 1200
+
 def run_menu_loop():
     """Run the main menu and return game settings when ready"""
-    menu_width, menu_height = 1200, 640
+    menu_width, menu_height = WIDTH, HEIGHT
     screen = pygame.display.set_mode((menu_width, menu_height))
     menu = MainMenu(menu_width, menu_height)
     
@@ -39,7 +42,7 @@ def initialize_pygame():
     """Initialize pygame and set up the display"""
     print("Wumpus World Auto Solver with Visualization")
     pygame.init()
-    initial_width, initial_height = 1200, 640
+    initial_width, initial_height = HEIGHT, WIDTH
     screen = pygame.display.set_mode((initial_width, initial_height))
     pygame.display.set_caption("Wumpus World")
     return screen
@@ -47,8 +50,8 @@ def initialize_pygame():
 def main():
     """Main game function"""
     initialize_pygame()
-    game_controller = GameController(1200, 640)  # Initial size, will be updated
-    
+    game_controller = GameController(WIDTH, HEIGHT)  # Initial size, will be updated
+
     while True:
         # Reset game controller state before showing menu
         game_controller.reset_controller_state()
