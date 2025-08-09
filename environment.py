@@ -46,12 +46,15 @@ class AgentState:
     score: int = 0
 
 class Environment:
-    def __init__(self, size: int = 8, num_wumpus: int = 2, pit_prob: float = 0.2, moving_wumpus_mode: bool = False):
+    def __init__(self, size: int = 8, num_wumpus: int = 2, pit_prob: float = 0.2, moving_wumpus_mode: bool = False, seed: int = None):
         self.size = size
         self.num_wumpus = num_wumpus
         self.pit_prob = pit_prob
         self.moving_wumpus_mode = moving_wumpus_mode 
         self.agent_action_count = 0
+        self.seed = seed
+        if seed is not None:
+            random.seed(seed)
         self.reset()
 
     def reset(self):
@@ -195,10 +198,10 @@ class Environment:
 
         elif action == Action.SHOOT:
             if self.agent_state.has_arrow:
-                print("AGENT SHOOTED")
                 self.agent_state.has_arrow = False
                 self.agent_state.score -= 10
                 scream_occurred = self._shoot_arrow()
+                print("AGENT SHOOTED")
 
         elif action == Action.CLIMB:
             if (self.agent_state.x, self.agent_state.y) == (0, 0):

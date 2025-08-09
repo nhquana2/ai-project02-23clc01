@@ -25,7 +25,7 @@ ai-project02-23clc01/
 ├── environment.py           # Wumpus World simulator
 ├── hybrid_agent.py          # The main intelligent agent logic
 ├── inference_engine.py      # Inference engine using propositional logic
-├── planning.py              # Pathfinding module (A*, Dijkstra)
+├── planning.py              # Pathfinding module
 ├── random_agent.py          # Random-moving agent
 ├── main.py                  # Entry-point that launches the GUI
 └── README.md                # You are here
@@ -48,8 +48,8 @@ ai-project02-23clc01/
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/nhquana2/ai-project01-23clc01.git
-   cd ai-project01-23clc01
+   git clone https://github.com/nhquana2/ai-project02-23clc01.git
+   cd ai-project02-23clc01
    ```
 2. (Optional) create a virtual environment with python venv or conda:
    ```bash
@@ -58,8 +58,8 @@ ai-project02-23clc01/
    ```
 
    ```bash
-   conda create -n rush_hour python==3.10
-   conda activate rush_hour
+   conda create -n wumpusworld python==3.10
+   conda activate wumpusworld
    ```
 
 3. Install dependencies:
