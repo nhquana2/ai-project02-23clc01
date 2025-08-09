@@ -211,7 +211,7 @@ class GameController:
         
         return "normal"
 
-    def execute_agent_step(self, env, agent, step_count, current_time, last_step_time, step_delay, info_panel):
+    def execute_agent_step(self, env, agent, step_count, current_time, last_step_time, step_delay, board, info_panel):
         """Execute one step of agent thinking and action"""
         if current_time - last_step_time < step_delay:
             return step_count, last_step_time, True
@@ -225,6 +225,7 @@ class GameController:
         
         # Execute agent action
         agent.think(percepts)
+
         if not agent.action_plan:
             print("No more actions available")
             return step_count, last_step_time, False
@@ -232,6 +233,11 @@ class GameController:
         action = agent.action_plan.pop(0)
         new_percepts = env.execute_action(action)
         agent._update_state(action, new_percepts)
+        
+        # Reset KB
+        if env.moving_wumpus_mode and env.agent_action_count > 0 and env.agent_action_count % 5 == 0:
+            agent.inference_engine.reset_kb()
+            board.update(env, agent.knowledge)
         
         step_count += 1
         last_step_time = current_time
@@ -304,7 +310,7 @@ class GameController:
                 self.quit_to_menu = False
                 self.is_visible = False
                 return True
-            
+
             # Check game over menu action
             if self.should_game_over_return_to_menu:
                 self.game_over_menu_requested = False
@@ -313,7 +319,7 @@ class GameController:
             # Execute game logic if not paused and agent is alive
             if not self.is_visible and agent.state.alive and not info_panel.game_over:
                 step_count, last_step_time, should_continue = self.execute_agent_step(
-                    env, agent, step_count, current_time, last_step_time, step_delay, info_panel
+                    env, agent, step_count, current_time, last_step_time, step_delay, board, info_panel
                 )
                 # Always update board after an action is executed
                 board.update(env, agent.knowledge)

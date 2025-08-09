@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Callable
 from dataclasses import dataclass
 import random
 
@@ -209,11 +209,12 @@ class Environment:
                     self.agent_state.score += 1000
                 self.agent_state.alive = False  # Game ends
         
+        # Increment action count and move wumpuses 
         self.agent_action_count += 1
-        
         if self.moving_wumpus_mode and self.agent_action_count % 5 == 0:
             self._move_wumpuses()
             print(f"Wumpus moved to {self.wumpus_positions}")
+
         
         # Check dead 
         pos = (self.agent_state.x, self.agent_state.y)
