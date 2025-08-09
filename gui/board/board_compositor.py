@@ -38,6 +38,7 @@ class BoardCompositor:
         self.entity_renderer.clear_surface()
         self.entity_renderer.draw_wumpuses(self.environment)
         self.entity_renderer.draw_agent(self.environment)
+        self.entity_renderer.draw_arrows(self.environment)
         
         self.knowledge_renderer.draw_knowledge(self.agent_knowledge)
         

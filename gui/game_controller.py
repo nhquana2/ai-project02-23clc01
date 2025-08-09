@@ -19,6 +19,7 @@ class GameController:
         self.resume_game = False
         self.quit_to_menu = False
         self.game_over_menu_requested = False
+        self.display_percepts = None  # Store current percepts for display
         
         # Create overlay
         self.overlay = pygame.Surface((screen_width, screen_height))
@@ -92,6 +93,7 @@ class GameController:
         self.resume_game = False
         self.quit_to_menu = False
         self.game_over_menu_requested = False
+        self.display_percepts = None  # Reset display percepts
         print("Controller state reset - all flags cleared")
     
     def handle_event(self, event):
@@ -217,11 +219,9 @@ class GameController:
             return step_count, last_step_time, True
         
         percepts = env.get_percept()
+        self.display_percepts = percepts  # Store initial percepts
         
-        # Print percept status
-        percept_attrs = ['stench', 'breeze', 'glitter', 'bump', 'scream']
-        percept_status = [f"{attr}: {str(getattr(percepts, attr)).lower()}" for attr in percept_attrs]
-        print(f"Step {step_count + 1}: {{{'; '.join(percept_status)}}}")
+        
         
         # Execute agent action
         agent.think(percepts)
@@ -232,7 +232,13 @@ class GameController:
         
         action = agent.action_plan.pop(0)
         new_percepts = env.execute_action(action)
+        self.display_percepts = new_percepts  # Update with new percepts after action
         agent._update_state(action, new_percepts)
+
+        # Print percept status
+        percept_attrs = ['stench', 'breeze', 'glitter', 'bump', 'scream']
+        percept_status = [f"{attr}: {str(getattr(new_percepts, attr)).lower()}" for attr in percept_attrs]
+        print(f"Step {step_count + 1}: {{{'; '.join(percept_status)}}}")
         
         # Reset KB
         if env.moving_wumpus_mode and env.agent_action_count > 0 and env.agent_action_count % 5 == 0:
@@ -265,8 +271,8 @@ class GameController:
         board.draw()
         screen.blit(board.get_surface(), (0, 0))
         
-        # Draw info panel
-        current_percepts = env.get_percept()
+        # Draw info panel - use stored display percepts or get current ones
+        current_percepts = self.display_percepts if self.display_percepts is not None else env.get_percept()
         info_panel.draw(env, agent, step_count, current_percepts)
         screen.blit(info_panel.get_surface(), (info_panel_x, 0))
         
@@ -288,6 +294,9 @@ class GameController:
         last_step_time = time.time()
         step_count = 0
         clock = pygame.time.Clock()
+        
+        # Initialize display percepts
+        self.display_percepts = env.get_percept()
         
         while running:
             current_time = time.time()
