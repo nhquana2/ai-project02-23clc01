@@ -6,7 +6,7 @@ from hybrid_agent import HybridAgent
 from random_agent import RandomAgent
 from gui.board import Board
 from gui.info_panel import InfoPanel
-
+import random
 class GameController:
     """Game state controller for pause/resume functionality"""
 
@@ -151,10 +151,12 @@ class GameController:
         from gui.menu import MainMenu
         
         # Create environment
+        #seed = 12348
+        seed = random.randint(0, 2**32 - 1)
         moving_wumpus = (settings.environment_mode == MainMenu.EnvironmentMode.DYNAMIC)
-        env = Environment(settings.board_size, settings.num_wumpus, settings.pit_probability, moving_wumpus)
+        env = Environment(settings.board_size, settings.num_wumpus, settings.pit_probability, moving_wumpus, seed=seed)
         agent = self.create_agent(env, settings.agent_mode)
-        
+        print(f"Seed for this map: {seed}")
         # Calculate dimensions
         cell_size = 80
         board_size = settings.board_size * cell_size

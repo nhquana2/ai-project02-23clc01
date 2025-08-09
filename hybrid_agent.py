@@ -60,7 +60,11 @@ class HybridAgent:
 
         if self.action_plan:
             return
-
+        
+        if not self._has_unvisited_safe():
+            if self._plan_shoot():
+                return
+        
         planning_start_time = time.time()
         if self.state.has_gold:
             self.action_plan = self.planner.find_path(self.state, (0, 0))
@@ -76,16 +80,7 @@ class HybridAgent:
             if cell.status == CellStatus.WUMPUS and not cell.visited:
                 known_wumpus_cells.append((x, y))
                 
-                
-        if (known_wumpus_cells or not unvisited_safe_cells) and self.state.has_arrow:
-            if known_wumpus_cells:
-                target = known_wumpus_cells[0]
-                print(f"Known Wumpus at {target}, planning to shoot.")
-                return self._plan_shoot_wumpus(target)
-            else:
-                print("No safe cells left, gambling with arrow.")
-                return [Action.SHOOT]        
-            
+                   
             
         if unvisited_safe_cells:
             unvisited_safe_cells.sort(key=lambda pos: abs(pos[0] - self.state.x) + abs(pos[1] - self.state.y))
@@ -93,6 +88,11 @@ class HybridAgent:
             print(f"New exploration target: {target_pos}")
             return self.planner.find_path(self.state, target_pos)
 
+        if known_wumpus_cells and self.state.has_arrow:
+            wpos = known_wumpus_cells[0]
+            print(f"Known Wumpus at {wpos}, planning to move to its row/col.")
+            return self._plan_allign_wumpus(wpos)
+            
         #risk if no safe cells
         risky_target = self.planner.find_least_risky_unknown(self.state.x, self.state.y)
         if risky_target:
@@ -101,70 +101,71 @@ class HybridAgent:
         return None
     
     
-    def _plan_shoot_wumpus(self, wumpus_pos) -> Optional[List[Action]]:
+    def _plan_allign_wumpus(self, wumpus_pos) -> Optional[List[Action]]:
         agent_x, agent_y = self.state.x, self.state.y
         wumpus_x, wumpus_y = wumpus_pos
 
-        actions = []
-
         if agent_x == wumpus_x or agent_y == wumpus_y:
-            # determine direction 
-            if agent_x == wumpus_x:
-                if agent_y < wumpus_y:
-                    desired_dir = Direction.NORTH
-                else:
-                    desired_dir = Direction.SOUTH
-            else:
-                if agent_x < wumpus_x:
-                    desired_dir = Direction.EAST
-                else:
-                    desired_dir = Direction.WEST
+            return []
 
-            # turn
-            current_dir = self.state.direction
-            while current_dir != desired_dir:
-                actions.append(Action.TURN_RIGHT)
-                current_dir = current_dir.turn_right()
-
-            actions.append(Action.SHOOT)
-            return actions
-
-        # find closet same row/col if the curr cell does not on the same row/col
         candidates = []
         for i in range(self.knowledge.size):
-            if i != agent_x:
-                candidates.append((i, wumpus_y))
-            if i != agent_y:
-                candidates.append((wumpus_x, i))
+            if i != wumpus_y:
+                pos = (wumpus_x, i)
+                cell = self.knowledge.get_cell(pos[0], pos[1])
+                if cell and cell.status == CellStatus.SAFE:
+                    candidates.append(pos)
+            if i != wumpus_x:
+                pos2 = (i, wumpus_y)
+                cell2 = self.knowledge.get_cell(pos2[0], pos2[1])
+                if cell2 and cell2.status == CellStatus.SAFE:
+                    candidates.append(pos2)
 
-        safe_candidates = [pos for pos in candidates if self.knowledge.get_cell(pos[0], pos[1]).status == CellStatus.SAFE]
-        if safe_candidates:
-            safe_candidates.sort(key=lambda pos: abs(pos[0] - agent_x) + abs(pos[1] - agent_y))
-            target = safe_candidates[0]
-            path = self.planner.find_path(self.state, target)
-            if path is None:
-                return None
+        if not candidates:
+            return None
 
-            if target[0] == wumpus_x:
-                if target[1] < wumpus_y:
-                    desired_dir = Direction.NORTH
-                else:
-                    desired_dir = Direction.SOUTH
-            else:
-                if target[0] < wumpus_x:
-                    desired_dir = Direction.EAST
-                else:
-                    desired_dir = Direction.WEST
+        candidates = list(set(candidates))  
+        candidates.sort(key=lambda pos: abs(pos[0] - agent_x) + abs(pos[1] - agent_y))
+        target = candidates[0]
 
-            current_dir = self.state.direction
-            turns = []
-            while current_dir != desired_dir:
-                turns.append(Action.TURN_RIGHT)
-                current_dir = current_dir.turn_right()
-            return path + turns + [Action.SHOOT]
-
-        return [Action.SHOOT]
+        return self.planner.find_path(self.state, target)
     
+    def _plan_shoot(self) -> bool:
+        
+        if not self.state.has_arrow:
+            return False
+
+        known_wumpus_cells = [
+            pos for pos, c in self.knowledge.grid.items()
+            if c.status == CellStatus.WUMPUS and not c.visited
+        ]
+        if not known_wumpus_cells:
+            return False
+
+        for wx, wy in known_wumpus_cells:
+            if self.state.x == wx or self.state.y == wy:
+                if self.state.x == wx:
+                    desired_dir = Direction.NORTH if wy > self.state.y else Direction.SOUTH
+                else:
+                    desired_dir = Direction.EAST if wx > self.state.x else Direction.WEST
+
+                actions = []
+                current_dir = self.state.direction
+                while current_dir != desired_dir:
+                    actions.append(Action.TURN_RIGHT)
+                    current_dir = current_dir.turn_right()
+
+                actions.append(Action.SHOOT)
+                self.action_plan = actions
+                print(f"Aligned with Wumpus at {(wx, wy)}: plan to {self.action_plan}")
+                return True
+        return False    
+    
+    def _has_unvisited_safe(self) -> bool:
+        for (_, _), cell in self.knowledge.grid.items():
+            if cell.status == CellStatus.SAFE and not cell.visited:
+                return True
+        return False
     
     def _update_state(self, action: Action, percept: Percept):
         if action == Action.TURN_LEFT:
