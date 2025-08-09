@@ -25,11 +25,11 @@ class EntityRenderer:
             wumpus_img_name = self._get_direction_image_name('wumpus', wumpus_direction)
             self._draw_image_at_position(wumpus_img_name, screen_x, screen_y)
     
-    def draw_arrows(self, environment: Environment):
+    def draw_arrows(self, arrow_path=None):
         """Draw arrows along the arrow path when agent shoots"""
-        if not environment.arrow_path:
+        if not arrow_path:
             return
-        x, y, direction = environment.arrow_path[-1]
+        x, y, direction = arrow_path[-1]
 
         screen_x, screen_y = self._get_screen_coords(x, y)
         arrow_img_name = self._get_direction_image_name('arrow', direction)

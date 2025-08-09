@@ -64,7 +64,6 @@ class Environment:
         self.agent_state = AgentState()
         self.agent_action_count = 0  # Reset action counter
         self.wumpus_directions = {}  # Track direction for each wumpus position
-        self.arrow_path = []  # Track arrow path when shooting
         self._generate_world()
     
     def _generate_world(self):
@@ -247,16 +246,12 @@ class Environment:
     def _shoot_arrow(self) -> bool:
         dx, dy = self.agent_state.direction.value
         x, y = self.agent_state.x, self.agent_state.y
-        self.arrow_path = []  # Clear previous arrow path
         
         while True:
             x += dx
             y += dy
             if not (0 <= x < self.size and 0 <= y < self.size):
                 break
-            
-            # Add position to arrow path
-            self.arrow_path.append((x, y, self.agent_state.direction))
             
             if (x, y) in self.wumpus_positions:
                 print("WUMPUS SCREAMED!")

@@ -27,7 +27,7 @@ class BoardCompositor:
         self.board_surface = pygame.Surface((self.width, self.height))
         self.background_renderer.build_background()
     
-    def draw(self):
+    def draw(self, arrow_path=None):
         if self.background_renderer.should_rebuild_background(self.environment):
             self.background_renderer.update_environment(self.environment)
             self.background_renderer.build_background()
@@ -38,7 +38,7 @@ class BoardCompositor:
         self.entity_renderer.clear_surface()
         self.entity_renderer.draw_wumpuses(self.environment)
         self.entity_renderer.draw_agent(self.environment)
-        self.entity_renderer.draw_arrows(self.environment)
+        self.entity_renderer.draw_arrows(arrow_path)  # Pass arrow_path from controller
         
         self.knowledge_renderer.draw_knowledge(self.agent_knowledge)
         

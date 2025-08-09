@@ -20,6 +20,8 @@ class GameController:
         self.quit_to_menu = False
         self.game_over_menu_requested = False
         self.display_percepts = None  # Store current percepts for display
+        self.arrow_path = []  # GUI manages arrow path
+        self.arrow_shot_time = None  # Track when arrow was shot for current step
         
         # Create overlay
         self.overlay = pygame.Surface((screen_width, screen_height))
@@ -94,6 +96,8 @@ class GameController:
         self.quit_to_menu = False
         self.game_over_menu_requested = False
         self.display_percepts = None  # Reset display percepts
+        self.arrow_path.clear()  # Clear GUI-managed arrow path
+        self.arrow_shot_time = None  # Reset arrow timing
         print("Controller state reset - all flags cleared")
     
     def handle_event(self, event):
@@ -149,6 +153,15 @@ class GameController:
     @property
     def should_game_over_return_to_menu(self):
         return self.game_over_menu_requested
+
+    def get_arrow_path(self):
+        """Get current arrow path for rendering by board"""
+        return self.arrow_path
+    
+    def clear_arrow_path(self):
+        """Clear arrow path manually if needed"""
+        self.arrow_path.clear()
+        self.arrow_shot_time = None
 
     # Game management methods
     def create_agent(self, env, agent_mode):
@@ -218,9 +231,12 @@ class GameController:
         if current_time - last_step_time < step_delay:
             return step_count, last_step_time, True
         
+        # Clear arrow path from previous step at the start of each new step
+        self.arrow_path.clear()
+        self.arrow_shot_time = None
+        
         percepts = env.get_percept()
         self.display_percepts = percepts  # Store initial percepts
-        
         
         
         # Execute agent action
@@ -231,6 +247,25 @@ class GameController:
             return step_count, last_step_time, False
         
         action = agent.action_plan.pop(0)
+
+        if action == Action.SHOOT:
+            # Only create arrow path if agent still has arrow
+            if env.agent_state.has_arrow:
+                dx, dy = env.agent_state.direction.value
+                x, y = env.agent_state.x, env.agent_state.y
+
+                while True:
+                    x += dx
+                    y += dy
+                    if not (0 <= x < env.size and 0 <= y < env.size):
+                        break
+                    self.arrow_path.append((x, y, env.agent_state.direction))
+                    if (x, y) in env.wumpus_positions:
+                        break
+                
+                self.arrow_shot_time = current_time
+
+
         new_percepts = env.execute_action(action)
         self.display_percepts = new_percepts  # Update with new percepts after action
         agent._update_state(action, new_percepts)
@@ -242,6 +277,7 @@ class GameController:
         
         if action == Action.SHOOT:
             agent.inference_engine.reset_kb()  # Reset KB after shooting
+            
 
         # Reset KB
         if env.moving_wumpus_mode and env.agent_action_count > 0 and env.agent_action_count % 5 == 0:
@@ -270,8 +306,8 @@ class GameController:
         """Render all game components"""
         screen.fill((40, 40, 40))
         
-        # Draw board
-        board.draw()
+        # Draw board with arrow path from GUI
+        board.draw(arrow_path=self.arrow_path)
         screen.blit(board.get_surface(), (0, 0))
         
         # Draw info panel - use stored display percepts or get current ones
