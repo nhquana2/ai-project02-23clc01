@@ -13,6 +13,8 @@ class HybridAgent:
         self.planner = Planner(environment.size, self.knowledge)
         self.state = AgentState()
         self.action_plan: List[Action] = []
+        # Ensure KB is reset immediately after any wumpus movement
+        # self.environment.reset_kb_callback = self.inference_engine.reset_kb
 
     def run(self):
         percepts = self.environment.get_percept()
@@ -32,6 +34,10 @@ class HybridAgent:
 
             percepts = self.environment.execute_action(action)
             self._update_state(action, percepts)
+            
+            # Reset KB
+            if self.environment.moving_wumpus_mode and self.environment.agent_action_count > 0 and self.environment.agent_action_count % 5 == 0:
+                self.inference_engine.reset_kb()
             
             if action == Action.CLIMB:
                 break

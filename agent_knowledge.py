@@ -74,6 +74,8 @@ class MapKnowledge:
         safe_cells_to_recheck = [
             (x, y) for (x, y), cell in self.grid.items() if cell.status == CellStatus.SAFE
         ]
+        print(self.get_cell(1,4).status)
+        print(safe_cells_to_recheck)
 
         for x, y in safe_cells_to_recheck:
             is_near_unknown = False

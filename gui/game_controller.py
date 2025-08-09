@@ -213,6 +213,7 @@ class GameController:
         
         # Execute agent action
         agent.think(percepts)
+
         if not agent.action_plan:
             print("No more actions available")
             return step_count, last_step_time, False
@@ -220,6 +221,10 @@ class GameController:
         action = agent.action_plan.pop(0)
         new_percepts = env.execute_action(action)
         agent._update_state(action, new_percepts)
+        
+        # Reset KB
+        if env.moving_wumpus_mode and env.agent_action_count > 0 and env.agent_action_count % 5 == 0:
+            agent.inference_engine.reset_kb()
         
         step_count += 1
         last_step_time = current_time
@@ -284,7 +289,7 @@ class GameController:
                 self.quit_to_menu = False
                 self.is_visible = False
                 return True
-            
+
             # Execute game logic if not paused
             if not self.is_visible and agent.state.alive:
                 step_count, last_step_time, should_continue = self.execute_agent_step(
