@@ -195,6 +195,7 @@ class Environment:
 
         elif action == Action.SHOOT:
             if self.agent_state.has_arrow:
+                print("AGENT SHOOTED")
                 self.agent_state.has_arrow = False
                 self.agent_state.score -= 10
                 scream_occurred = self._shoot_arrow()
@@ -245,6 +246,7 @@ class Environment:
             if not (0 <= x < self.size and 0 <= y < self.size):
                 break
             if (x, y) in self.wumpus_positions:
+                print("WUMPUS SCREAMED!")
                 self.wumpus_positions.remove((x, y))
                 return True 
         

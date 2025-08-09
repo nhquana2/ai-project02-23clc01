@@ -1,4 +1,4 @@
-from environment import Environment, Action, Percept, AgentState
+from environment import Environment, Action, Percept, AgentState, Direction
 from agent_knowledge import MapKnowledge, CellStatus
 from inference_engine import InferenceEngine
 from planning import Planner
@@ -69,10 +69,24 @@ class HybridAgent:
 
     def _plan_exploration(self) -> Optional[List[Action]]:
         unvisited_safe_cells = []
+        known_wumpus_cells = []
         for (x, y), cell in self.knowledge.grid.items():
             if cell.status == CellStatus.SAFE and not cell.visited:
                 unvisited_safe_cells.append((x, y))
-
+            if cell.status == CellStatus.WUMPUS and not cell.visited:
+                known_wumpus_cells.append((x, y))
+                
+                
+        if (known_wumpus_cells or not unvisited_safe_cells) and self.state.has_arrow:
+            if known_wumpus_cells:
+                target = known_wumpus_cells[0]
+                print(f"Known Wumpus at {target}, planning to shoot.")
+                return self._plan_shoot_wumpus(target)
+            else:
+                print("No safe cells left, gambling with arrow.")
+                return [Action.SHOOT]        
+            
+            
         if unvisited_safe_cells:
             unvisited_safe_cells.sort(key=lambda pos: abs(pos[0] - self.state.x) + abs(pos[1] - self.state.y))
             target_pos = unvisited_safe_cells[0]
@@ -85,7 +99,73 @@ class HybridAgent:
             print(f"Gambling: least risky unknown target: {risky_target}")
             return self.planner.find_path(self.state, risky_target)
         return None
+    
+    
+    def _plan_shoot_wumpus(self, wumpus_pos) -> Optional[List[Action]]:
+        agent_x, agent_y = self.state.x, self.state.y
+        wumpus_x, wumpus_y = wumpus_pos
 
+        actions = []
+
+        if agent_x == wumpus_x or agent_y == wumpus_y:
+            # determine direction 
+            if agent_x == wumpus_x:
+                if agent_y < wumpus_y:
+                    desired_dir = Direction.NORTH
+                else:
+                    desired_dir = Direction.SOUTH
+            else:
+                if agent_x < wumpus_x:
+                    desired_dir = Direction.EAST
+                else:
+                    desired_dir = Direction.WEST
+
+            # turn
+            current_dir = self.state.direction
+            while current_dir != desired_dir:
+                actions.append(Action.TURN_RIGHT)
+                current_dir = current_dir.turn_right()
+
+            actions.append(Action.SHOOT)
+            return actions
+
+        # find closet same row/col if the curr cell does not on the same row/col
+        candidates = []
+        for i in range(self.knowledge.size):
+            if i != agent_x:
+                candidates.append((i, wumpus_y))
+            if i != agent_y:
+                candidates.append((wumpus_x, i))
+
+        safe_candidates = [pos for pos in candidates if self.knowledge.get_cell(pos[0], pos[1]).status == CellStatus.SAFE]
+        if safe_candidates:
+            safe_candidates.sort(key=lambda pos: abs(pos[0] - agent_x) + abs(pos[1] - agent_y))
+            target = safe_candidates[0]
+            path = self.planner.find_path(self.state, target)
+            if path is None:
+                return None
+
+            if target[0] == wumpus_x:
+                if target[1] < wumpus_y:
+                    desired_dir = Direction.NORTH
+                else:
+                    desired_dir = Direction.SOUTH
+            else:
+                if target[0] < wumpus_x:
+                    desired_dir = Direction.EAST
+                else:
+                    desired_dir = Direction.WEST
+
+            current_dir = self.state.direction
+            turns = []
+            while current_dir != desired_dir:
+                turns.append(Action.TURN_RIGHT)
+                current_dir = current_dir.turn_right()
+            return path + turns + [Action.SHOOT]
+
+        return [Action.SHOOT]
+    
+    
     def _update_state(self, action: Action, percept: Percept):
         if action == Action.TURN_LEFT:
             self.state.direction = self.state.direction.turn_left()
