@@ -83,12 +83,19 @@ class HybridAgent:
         for (x, y), cell in self.knowledge.grid.items():
             if cell.status == CellStatus.SAFE and not cell.visited:
                 unvisited_safe_cells.append((x, y))
+            if cell.status == CellStatus.WUMPUS and not cell.visited:
+                known_wumpus_cells.append((x, y))
         
         if unvisited_safe_cells:
             unvisited_safe_cells.sort(key=lambda pos: abs(pos[0] - self.state.x) + abs(pos[1] - self.state.y))
             target_pos = unvisited_safe_cells[0]
             print(f"New exploration target: {target_pos}")
             return self.planner.find_path(self.state, target_pos)
+
+        if known_wumpus_cells and self.state.has_arrow:
+            wpos = known_wumpus_cells[0]
+            print(f"Known Wumpus at {wpos}, planning to move to its row/col.")
+            return self._plan_align_wumpus(wpos)
 
         # 2) No unvisited SAFE cells left: consider between visited & UNKNOWN and unvisited & UNKNOWN
         visited_unknown = self.planner.find_least_risky_unknown(self.state.x, self.state.y, visited_filter=True)
@@ -153,7 +160,7 @@ class HybridAgent:
         return self.planner.find_path(self.state, target)
     
     def _plan_shoot(self) -> bool:
-        
+        print("Planning to shoot Wumpus...")
         if not self.state.has_arrow:
             return False
 
@@ -161,10 +168,14 @@ class HybridAgent:
             pos for pos, c in self.knowledge.grid.items()
             if c.status == CellStatus.WUMPUS and not c.visited
         ]
+
         if not known_wumpus_cells:
             return False
 
+        print(f"Known Wumpus cells: {known_wumpus_cells}")
+
         for wx, wy in known_wumpus_cells:
+            print(f"Checking Wumpus at {(wx, wy)}")
             if self.state.x == wx or self.state.y == wy:
                 if self.state.x == wx:
                     desired_dir = Direction.NORTH if wy > self.state.y else Direction.SOUTH
