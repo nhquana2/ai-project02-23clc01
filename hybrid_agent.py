@@ -72,18 +72,43 @@ class HybridAgent:
         for (x, y), cell in self.knowledge.grid.items():
             if cell.status == CellStatus.SAFE and not cell.visited:
                 unvisited_safe_cells.append((x, y))
-
+        
         if unvisited_safe_cells:
             unvisited_safe_cells.sort(key=lambda pos: abs(pos[0] - self.state.x) + abs(pos[1] - self.state.y))
             target_pos = unvisited_safe_cells[0]
             print(f"New exploration target: {target_pos}")
             return self.planner.find_path(self.state, target_pos)
 
-        #risk if no safe cells
-        risky_target = self.planner.find_least_risky_unknown(self.state.x, self.state.y)
-        if risky_target:
-            print(f"Gambling: least risky unknown target: {risky_target}")
-            return self.planner.find_path(self.state, risky_target)
+        # 2) No unvisited SAFE cells left: consider between visited & UNKNOWN and unvisited & UNKNOWN
+        visited_unknown = self.planner.find_least_risky_unknown(self.state.x, self.state.y, visited_filter=True)
+        unvisited_unknown = self.planner.find_least_risky_unknown(self.state.x, self.state.y, visited_filter=False)
+
+        # Choose the better between the two categories by risk, then distance
+        best_unknown_target = None
+        best_unknown_risk = float('inf')
+        best_unknown_distance = float('inf')
+        best_unknown_was_visited = False
+
+        for candidate_pos in [visited_unknown, unvisited_unknown]:
+            if candidate_pos is None:
+                continue
+            cx, cy = candidate_pos
+            candidate_risk = self.planner._estimate_cell_risk(cx, cy)
+            candidate_distance = abs(cx - self.state.x) + abs(cy - self.state.y)
+            candidate_was_visited = self.knowledge.get_cell(cx, cy).visited
+            if (
+                candidate_risk < best_unknown_risk
+                or (candidate_risk == best_unknown_risk and not candidate_was_visited and best_unknown_was_visited)
+                or (candidate_risk == best_unknown_risk and candidate_was_visited == best_unknown_was_visited and candidate_distance < best_unknown_distance)
+            ):
+                best_unknown_risk = candidate_risk
+                best_unknown_distance = candidate_distance
+                best_unknown_target = candidate_pos
+                best_unknown_was_visited = candidate_was_visited
+
+        if best_unknown_target:
+            print(f"Gambling: chosen UNKNOWN target {best_unknown_target} (risk={best_unknown_risk:.2f})")
+            return self.planner.find_path(self.state, best_unknown_target)
         return None
 
     def _update_state(self, action: Action, percept: Percept):

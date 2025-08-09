@@ -47,12 +47,14 @@ class MapKnowledge:
     
     def update_after_visit(self, x: int, y: int, percept: Percept):
         cell = self.get_cell(x, y)
+        # Always refresh percepts when re-visiting 
+        # changes can be perceived again
         if not cell.visited:
             cell.visited = True
-            cell.status = CellStatus.SAFE
-            cell.stench = percept.stench
-            cell.breeze = percept.breeze
-            cell.glitter = percept.glitter
+        cell.status = CellStatus.SAFE
+        cell.stench = percept.stench
+        cell.breeze = percept.breeze
+        cell.glitter = percept.glitter
 
     def update_cell_status(self, x: int, y: int, status: CellStatus):
         cell = self.get_cell(x, y)
@@ -68,12 +70,11 @@ class MapKnowledge:
                 cell.stench = None
             if cell.status == CellStatus.WUMPUS:
                 cell.status = CellStatus.UNKNOWN
-        # 2. Thu thập danh sách các ô SAFE cần kiểm tra lại
+
         safe_cells_to_recheck = [
             (x, y) for (x, y), cell in self.grid.items() if cell.status == CellStatus.SAFE
         ]
 
-        # 3. Chỉ hạ cấp những ô SAFE nằm ở edge của vùng kiến thức
         for x, y in safe_cells_to_recheck:
             is_near_unknown = False
             for nx, ny in self.get_neighbors(x, y):
@@ -81,9 +82,6 @@ class MapKnowledge:
                 if neighbor_cell and neighbor_cell.status == CellStatus.UNKNOWN:
                     is_near_unknown = True
                     break
-
-            # Nếu ô SAFE này nằm cạnh một mối nguy hiểm tiềm tàng (UNKNOWN),
-            # sự an toàn của nó không còn được đảm bảo.
             if is_near_unknown:
                 self.get_cell(x, y).status = CellStatus.UNKNOWN
     

@@ -44,18 +44,24 @@ class Planner:
         risk = min(risk / max(1, len(neighbors)), 1.0)
         return risk
     
-    def find_least_risky_unknown(self, agent_x: int, agent_y: int) -> Optional[Tuple[int, int]]:
-        """Find the least risky unknown cell to gamble on."""
+    def find_least_risky_unknown(self, agent_x: int, agent_y: int, visited_filter: Optional[bool] = None) -> Optional[Tuple[int, int]]:
         min_risk = float('inf')
         best_cell = None
         for (x, y), cell in self.map_knowledge.grid.items():
-            if cell.status == CellStatus.UNKNOWN and not cell.visited:
-                risk = self._estimate_cell_risk(x, y)
-                # prefer closer cells if risk is equal
-                dist = abs(x - agent_x) + abs(y - agent_y)
-                if risk < min_risk or (risk == min_risk and (best_cell is None or dist < abs(best_cell[0] - agent_x) + abs(best_cell[1] - agent_y))):
-                    min_risk = risk
-                    best_cell = (x, y)
+            if cell.status != CellStatus.UNKNOWN:
+                continue
+            if visited_filter is True and not cell.visited:
+                continue
+            if visited_filter is False and cell.visited:
+                continue
+            
+            risk = self._estimate_cell_risk(x, y)
+            # prefer closer cells if risk is equal
+            dist = abs(x - agent_x) + abs(y - agent_y)  
+            if risk < min_risk or (risk == min_risk and (best_cell is None or dist < abs(best_cell[0] - agent_x) + abs(best_cell[1] - agent_y))):
+                min_risk = risk
+                best_cell = (x, y)
+
         return best_cell
     
     def _reconstruct_path(self, came_from: Dict, current: SearchState) -> List[Action]:
