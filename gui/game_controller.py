@@ -199,7 +199,7 @@ class GameController:
         
         return "normal"
 
-    def execute_agent_step(self, env, agent, step_count, current_time, last_step_time, step_delay):
+    def execute_agent_step(self, env, agent, step_count, current_time, last_step_time, step_delay, board):
         """Execute one step of agent thinking and action"""
         if current_time - last_step_time < step_delay:
             return step_count, last_step_time, True
@@ -225,6 +225,7 @@ class GameController:
         # Reset KB
         if env.moving_wumpus_mode and env.agent_action_count > 0 and env.agent_action_count % 5 == 0:
             agent.inference_engine.reset_kb()
+            board.update(env, agent.knowledge)
         
         step_count += 1
         last_step_time = current_time
@@ -293,7 +294,7 @@ class GameController:
             # Execute game logic if not paused
             if not self.is_visible and agent.state.alive:
                 step_count, last_step_time, should_continue = self.execute_agent_step(
-                    env, agent, step_count, current_time, last_step_time, step_delay
+                    env, agent, step_count, current_time, last_step_time, step_delay, board
                 )
                 # Always update board after an action is executed
                 board.update(env, agent.knowledge)

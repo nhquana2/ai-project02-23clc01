@@ -41,14 +41,6 @@ class InferenceEngine:
                 self.initial_kb_setup_done = True
 
     def run_inference(self, agent_pos: tuple = None, action_count: int = 0, moving_wumpus_mode: bool = False):
-        # In moving wumpus mode, reset KB every 5 actions (when wumpus moves)
-        # print(f"Action count: {action_count + 1}")
-        # if moving_wumpus_mode and action_count > 0 and action_count % 5 == 0:
-        #     self.kb = None
-        #     self.processed_cells.clear()
-        #     print("Resetting KB and wumpus-related knowledge")
-        #     self.knowledge.reset_wumpus_knowledge()
-        
         self._initialize_kb()
         
         # Add facts from visited cells
@@ -57,8 +49,13 @@ class InferenceEngine:
                 # Always add pit information (pits are static)
                 self.kb.tell(frozenset([(self._pos_to_symbol("P", x, y), False)]))
                 self._add_biconditional(self.kb, "B", x, y, "P", cell.breeze)
-                self.kb.tell(frozenset([(self._pos_to_symbol("W", x, y), False)]))
-                self._add_biconditional(self.kb, "S", x, y, "W", cell.stench)
+
+                if not moving_wumpus_mode:
+                    self.kb.tell(frozenset([(self._pos_to_symbol("W", x, y), False)]))
+                    self._add_biconditional(self.kb, "S", x, y, "W", cell.stench)
+                
+                if cell.stench is not None:
+                    self._add_biconditional(self.kb, "S", x, y, "W", cell.stench)
                 
                 self.processed_cells.add((x, y))
 
