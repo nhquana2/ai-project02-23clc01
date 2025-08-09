@@ -162,7 +162,7 @@ class GameController:
         """Initialize all game components and return them"""
         
         # Create environment
-        #seed = 12348
+        #seed = 1904674085
         seed = random.randint(0, 2**32 - 1)
         moving_wumpus = (settings.environment_mode == MainMenu.EnvironmentMode.DYNAMIC)
         env = Environment(settings.board_size, settings.num_wumpus, settings.pit_probability, moving_wumpus, seed=seed)
@@ -240,6 +240,9 @@ class GameController:
         percept_status = [f"{attr}: {str(getattr(new_percepts, attr)).lower()}" for attr in percept_attrs]
         print(f"Step {step_count + 1}: {{{'; '.join(percept_status)}}}")
         
+        if action == Action.SHOOT:
+            agent.inference_engine.reset_kb()  # Reset KB after shooting
+
         # Reset KB
         if env.moving_wumpus_mode and env.agent_action_count > 0 and env.agent_action_count % 5 == 0:
             agent.inference_engine.reset_kb()
