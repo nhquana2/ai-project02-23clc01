@@ -1,0 +1,13 @@
+{
+    "hybrid_agent": {
+        "success_rate": 0.0,
+        "avg_score": -1010.0,
+        "decision_eff": 10.0
+    },
+    "random_agent": {
+        "success_rate": 0.0,
+        "avg_score": -15.0,
+        "decision_eff": 8.0
+    },
+    "test_environments": 1
+}

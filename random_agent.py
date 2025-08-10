@@ -39,21 +39,45 @@ class RandomAgent:
         
         # Always choose a completely random action
         self.action_plan = [self._choose_random_action()]
+    
+    def run(self):
+        """Main game loop for the random agent"""
+        percepts = self.environment.get_percept()
+
+        while self.state.alive:
+            self.think(percepts)
+
+            self.knowledge.display_agent_view(agent_pos=(self.state.x, self.state.y), agent_dir=self.state.direction)
+            self.environment.display()
+
+            if not self.action_plan:
+                print("\nRandom agent has no action planned. Ending simulation.")
+                break
+
+            action = self._choose_random_action()
+            print(f"\nRandom Action: {action.name}")
+
+            # Execute action and get new percepts
+            percepts = self.environment.execute_action(action)
+            self._update_state(action, percepts)
+
+            # End game if agent climbs out
+            if action == Action.CLIMB:
+                break
+        
+        print(f"\nGame Over. Final Score: {self.environment.agent_state.score}")
 
     def _choose_random_action(self) -> Action:
         """Choose a completely random action from available actions"""
-        # Filter available actions based on current position
         valid_actions = []
         
         for action in self.available_actions:
             if action == Action.CLIMB:
-                # CLIMB only allowed at starting position (0,0)
                 if (self.state.x, self.state.y) == (0, 0):
                     valid_actions.append(action)
             else:
                 valid_actions.append(action)
         
-        # If no valid actions (shouldn't happen), fallback to basic actions
         if not valid_actions:
             valid_actions = [Action.FORWARD, Action.TURN_LEFT, Action.TURN_RIGHT]
         
