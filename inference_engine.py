@@ -1,6 +1,7 @@
 from agent_knowledge import MapKnowledge, CellStatus
 from inference import KnowledgeBase
 from typing import Optional, Set, Tuple
+from environment import Percept, Direction
 
 class InferenceEngine:
     def __init__(self, knowledge: MapKnowledge):
@@ -92,3 +93,9 @@ class InferenceEngine:
         self.processed_cells.clear()
         print("Resetting KB and wumpus-related knowledge")
         self.knowledge.reset_wumpus_knowledge()
+
+    def reset_kb_after_shoot(self, agent_pos: Tuple[int, int], agent_direction: Direction):
+        self.kb = None
+        self.processed_cells.clear()
+        print("Resetting KB after shooting")
+        self.knowledge.reset_wumpus_knowledge_after_shoot(agent_pos, agent_direction)

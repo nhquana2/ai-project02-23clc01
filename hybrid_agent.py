@@ -36,8 +36,9 @@ class HybridAgent:
             self._update_state(action, percepts)
 
             if action == Action.SHOOT:
-                self.inference_engine.reset_kb()  # Reset KB after shooting
-            
+                # Reset KB after shooting
+                self.inference_engine.reset_kb_after_shoot((self.state.x, self.state.y), self.state.direction)  
+
             # Reset KB
             if self.environment.moving_wumpus_mode and self.environment.agent_action_count > 0 and self.environment.agent_action_count % 5 == 0:
                 self.inference_engine.reset_kb()
