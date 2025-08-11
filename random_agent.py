@@ -47,14 +47,14 @@ class RandomAgent:
         while self.state.alive:
             self.think(percepts)
 
-            self.knowledge.display_agent_view(agent_pos=(self.state.x, self.state.y), agent_dir=self.state.direction)
-            self.environment.display()
+            # self.knowledge.display_agent_view(agent_pos=(self.state.x, self.state.y), agent_dir=self.state.direction)
+            # self.environment.display()
 
             if not self.action_plan:
                 print("\nRandom agent has no action planned. Ending simulation.")
                 break
 
-            action = self._choose_random_action()
+            action = self.action_plan.pop(0)
             print(f"\nRandom Action: {action.name}")
 
             # Execute action and get new percepts

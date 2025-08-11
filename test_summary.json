@@ -1,0 +1,39 @@
+{
+    "total_environments": 12,
+    "hybrid_agent": {
+        "success_rate": 0.08333333333333333,
+        "avg_score": -853.25,
+        "avg_decision_eff": 20.166666666666668
+    },
+    "random_agent": {
+        "success_rate": 0.0,
+        "avg_score": -258.3333333333333,
+        "avg_decision_eff": 5.25
+    },
+    "test_configurations": [
+        {
+            "Size": 8,
+            "NumWumpus": 2,
+            "PitProb": 0.2,
+            "Moving": false
+        },
+        {
+            "Size": 8,
+            "NumWumpus": 2,
+            "PitProb": 0.2,
+            "Moving": true
+        },
+        {
+            "Size": 10,
+            "NumWumpus": 3,
+            "PitProb": 0.3,
+            "Moving": false
+        },
+        {
+            "Size": 10,
+            "NumWumpus": 3,
+            "PitProb": 0.3,
+            "Moving": true
+        }
+    ]
+}

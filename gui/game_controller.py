@@ -275,16 +275,18 @@ class GameController:
         percept_status = [f"{attr}: {str(getattr(new_percepts, attr)).lower()}" for attr in percept_attrs]
         print(f"Step {step_count + 1}: {{{'; '.join(percept_status)}}}")
         
-        if action == Action.SHOOT:
-            # Reset KB after shooting
-            agent.inference_engine.reset_kb_after_shoot((env.agent_state.x, env.agent_state.y), env.agent_state.direction)
-            board.update(env, agent.knowledge)
-            
 
-        # Reset KB
-        if env.moving_wumpus_mode and env.agent_action_count > 0 and env.agent_action_count % 5 == 0:
-            agent.inference_engine.reset_kb()
-            board.update(env, agent.knowledge)
+        if isinstance(agent, HybridAgent):
+            if action == Action.SHOOT:
+                # Reset KB after shooting
+                agent.inference_engine.reset_kb_after_shoot((env.agent_state.x, env.agent_state.y), env.agent_state.direction)
+                board.update(env, agent.knowledge)
+                
+
+            # Reset KB
+            if env.moving_wumpus_mode and env.agent_action_count > 0 and env.agent_action_count % 5 == 0:
+                agent.inference_engine.reset_kb()
+                board.update(env, agent.knowledge)
         
         step_count += 1
         last_step_time = current_time

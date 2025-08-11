@@ -44,6 +44,7 @@ class AgentState:
     has_arrow: bool = True
     alive: bool = True
     score: int = 0
+    win: bool = False
 
 class Environment:
     def __init__(self, size: int = 8, num_wumpus: int = 2, pit_prob: float = 0.2, moving_wumpus_mode: bool = False, seed: int = None):
@@ -211,6 +212,7 @@ class Environment:
                 if self.agent_state.has_gold:
                     self.agent_state.score += 1000
                 self.agent_state.alive = False  # Game ends
+                self.agent_state.win = True
         
         # Increment action count and move wumpuses 
         self.agent_action_count += 1

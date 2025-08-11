@@ -22,8 +22,8 @@ class HybridAgent:
         while self.state.alive:
             self.think(percepts)
 
-            self.knowledge.display_agent_view(agent_pos=(self.state.x, self.state.y), agent_dir=self.state.direction)
-            self.environment.display()
+            # self.knowledge.display_agent_view(agent_pos=(self.state.x, self.state.y), agent_dir=self.state.direction)
+            # self.environment.display()
 
             if not self.action_plan:
                 print("\nAgent is stuck and has no plan. Ending simulation.")
@@ -46,7 +46,7 @@ class HybridAgent:
             if action == Action.CLIMB:
                 break
         
-        print(f"\nGame Over. Final Score: {self.environment.agent_state.score}")
+        print(f"\nGame Over. Final Score: {self.environment.agent_state.score}, {self.environment.agent_action_count} actions taken, {self.environment.agent_state.has_gold} gold collected, {self.environment.agent_state.alive} alive")
 
     def think(self, percepts: Percept):
         self.knowledge.update_after_visit(self.state.x, self.state.y, percepts)
