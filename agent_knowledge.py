@@ -96,16 +96,18 @@ class MapKnowledge:
 
         # Reset Wumpus knowledge in the direction of the agent's shot
         cell_positions = [(x, y)] # Agent location
+        neighbor_positions = []
+
         while True:
             x += dx
             y += dy
             if not (0 <= x < self.size and 0 <= y < self.size):
                 break
             cell_positions.append((x, y))
-            # Add neighbors
+            # Consider neighbors for resetting stench
             for nx, ny in self.get_neighbors(x, y):
                 if (nx, ny) not in cell_positions:
-                    cell_positions.append((nx, ny))
+                    neighbor_positions.append((nx, ny))
 
         for cell_pos in cell_positions:
             cell = self.get_cell(*cell_pos)
@@ -113,6 +115,12 @@ class MapKnowledge:
                 cell.stench = None
             if cell.status == CellStatus.WUMPUS:
                 cell.status = CellStatus.UNKNOWN
+
+        # Reset stench only for neighbors of the shot path
+        for cell_pos in neighbor_positions:
+            cell = self.get_cell(*cell_pos)
+            if cell.visited:
+                cell.stench = None
     
     def display_agent_view(self, agent_pos: Tuple[int, int], agent_dir: Enum):
         print("\n" + "="*20 + " Agent's Knowledge " + "="*20)

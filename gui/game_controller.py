@@ -175,8 +175,8 @@ class GameController:
         """Initialize all game components and return them"""
         
         # Create environment
-        seed = 1469294829
-        #seed = random.randint(0, 2**32 - 1)
+        #seed = 1469294829
+        seed = random.randint(0, 2**32 - 1)
         moving_wumpus = (settings.environment_mode == MainMenu.EnvironmentMode.DYNAMIC)
         env = Environment(settings.board_size, settings.num_wumpus, settings.pit_probability, moving_wumpus, seed=seed)
         agent = self.create_agent(env, settings.agent_mode)
