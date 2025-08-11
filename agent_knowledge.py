@@ -75,6 +75,8 @@ class MapKnowledge:
             (x, y) for (x, y), cell in self.grid.items() if cell.status == CellStatus.SAFE
         ]
 
+        cells_to_unknown: List[Tuple[int, int]] = []
+
         for x, y in safe_cells_to_recheck:
             is_near_unknown = False
             for nx, ny in self.get_neighbors(x, y):
@@ -83,7 +85,10 @@ class MapKnowledge:
                     is_near_unknown = True
                     break
             if is_near_unknown:
-                self.get_cell(x, y).status = CellStatus.UNKNOWN
+                cells_to_unknown.append((x, y))
+
+        for x, y in cells_to_unknown:
+            self.get_cell(x, y).status = CellStatus.UNKNOWN
     
     def display_agent_view(self, agent_pos: Tuple[int, int], agent_dir: Enum):
         print("\n" + "="*20 + " Agent's Knowledge " + "="*20)

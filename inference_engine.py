@@ -14,6 +14,8 @@ class InferenceEngine:
         return f"{prefix}_{x}_{y}"
 
     def _add_biconditional(self, kb: KnowledgeBase, percept_prefix: str, x: int, y: int, cause_prefix: str, has_percept: bool):
+        # if has_percept is None:
+        #     return
         p_sym = self._pos_to_symbol(percept_prefix, x, y)
         neighbors = self.knowledge.get_neighbors(x, y)
         cause_symbols = [self._pos_to_symbol(cause_prefix, nx, ny) for nx, ny in neighbors]
@@ -23,7 +25,7 @@ class InferenceEngine:
             kb.tell(frozenset([(p_sym, True)])) # P is true
             # P => (C1 v C2 v ...)  is  ~P v C1 v C2 v ...
             kb.tell(frozenset([(p_sym, False)] + [(c, True) for c in cause_symbols]))
-        else:
+        elif has_percept is False:
             kb.tell(frozenset([(p_sym, False)])) # P is false
             # ~P => ~(C1 v C2 v ...) is ~P => (~C1 ^ ~C2 ^ ...)
             # which means (~P => ~C1), (~P => ~C2), ...

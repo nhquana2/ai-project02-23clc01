@@ -175,8 +175,8 @@ class GameController:
         """Initialize all game components and return them"""
         
         # Create environment
-        #seed = 1904674085
-        seed = random.randint(0, 2**32 - 1)
+        seed = 150075292
+        # seed = random.randint(0, 2**32 - 1)
         moving_wumpus = (settings.environment_mode == MainMenu.EnvironmentMode.DYNAMIC)
         env = Environment(settings.board_size, settings.num_wumpus, settings.pit_probability, moving_wumpus, seed=seed)
         agent = self.create_agent(env, settings.agent_mode)
@@ -242,6 +242,10 @@ class GameController:
         # Execute agent action
         agent.think(percepts)
 
+        print("debug cell 0,2", agent.knowledge.get_cell(0, 2))
+        print("debug cell 0,3", agent.knowledge.get_cell(0, 3))
+        print("debug cell 0,4", agent.knowledge.get_cell(0, 4))
+
         if not agent.action_plan:
             print("No more actions available")
             return step_count, last_step_time, False
@@ -277,6 +281,8 @@ class GameController:
         
         if action == Action.SHOOT:
             agent.inference_engine.reset_kb()  # Reset KB after shooting
+            # Immediately refresh board to reflect knowledge changes from the shot
+            board.update(env, agent.knowledge)
             
 
         # Reset KB
