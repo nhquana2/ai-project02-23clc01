@@ -19,6 +19,7 @@ def run_test(env: Environment, agent_class) -> Tuple[int, int, float, int]:
     total_time = 0
     total_step = 0
 
+
     log_act = []
     
     env.reset()
@@ -54,7 +55,9 @@ def run_test(env: Environment, agent_class) -> Tuple[int, int, float, int]:
         
 
     end_time = time.time()
-    
+
+    final_map_state = env.get_map_state_string()
+
     if env.agent_state.has_gold and env.agent_state.win:
         successes += 1
 
@@ -62,7 +65,7 @@ def run_test(env: Environment, agent_class) -> Tuple[int, int, float, int]:
     total_time += (end_time - start_time)
     total_step += env.agent_action_count
 
-    return successes, total_score, total_time, total_step, log_act
+    return successes, total_score, total_time, total_step, log_act, final_map_state
 
 
 if __name__ == "__main__":
@@ -96,8 +99,8 @@ if __name__ == "__main__":
         writer.writerow(csv_headers)
 
         for i, env in enumerate(envs):
-            env.display()
-            successes, total_score, total_time, total_step, log_act = run_test(env, HybridAgent)
+            #env.display()
+            successes, total_score, total_time, total_step, log_act, final_map_state = run_test(env, HybridAgent)
 
             all_hybrid_successes.append(successes)
             all_hybrid_scores.append(total_score)
@@ -105,9 +108,17 @@ if __name__ == "__main__":
 
             log_file_path = f"results/log_map{i + 1}.txt"
 
+            final_map_state_path = f"results/final_map_state_map{i + 1}.txt"
+
             with open(log_file_path, "w") as log_file:
                 for log in log_act:
                     log_file.write(log)
+
+            with open(final_map_state_path, "w") as final_map_file:
+                final_map_file.write(final_map_state)
+
+
+
 
             row = [
                 i + 1,  # Map_ID

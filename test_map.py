@@ -59,8 +59,8 @@ if __name__ == "__main__":
         env_configs.append(config[0])
 
     print(f"Created {len(envs)} environments distributed across {len(config)} configurations")
-    
-    csv_filename = 'test_results.csv'
+
+    csv_filename = 'results/test_results_random.csv'
     csv_headers = [
         'Map_ID', 'Size', 'NumWumpus', 'PitProb', 'Moving',
         'Hybrid_Success', 'Hybrid_Score', 'Hybrid_Decision_Eff',

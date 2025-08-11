@@ -324,3 +324,41 @@ class Environment:
         print(f"Score: {self.agent_state.score}, Arrow: {self.agent_state.has_arrow}, Gold: {self.agent_state.has_gold}")
         if self.moving_wumpus_mode:
             print(f"Moving Wumpus Mode: Action Count: {self.agent_action_count}")
+
+    def get_map_state(self) -> List[List[str]]:
+        """Get the current state of the map as a 2D list of strings"""
+        map_state = [['.' for _ in range(self.size)] for _ in range(self.size)]
+        
+        for y in range(self.size):
+            for x in range(self.size):
+                if (x, y) == (self.agent_state.x, self.agent_state.y):
+                    if self.agent_state.direction == Direction.NORTH:
+                        map_state[y][x] = '^'
+                    elif self.agent_state.direction == Direction.EAST:
+                        map_state[y][x] = '>'
+                    elif self.agent_state.direction == Direction.SOUTH:
+                        map_state[y][x] = 'v'
+                    else:
+                        map_state[y][x] = '<'
+                elif (x, y) in self.wumpus_positions:
+                    map_state[y][x] = 'W'
+                elif (x, y) in self.pit_positions:
+                    map_state[y][x] = 'P'
+                elif (x, y) == self.gold_position:
+                    map_state[y][x] = 'G'
+        
+        return map_state
+
+    def get_map_state_string(self) -> str:
+        """Get the map state as a formatted string"""
+        map_state = self.get_map_state()
+        
+        result = "[\n"
+        for i, row in enumerate(reversed(map_state)):
+            if i == len(map_state) - 1:
+                result += f"  {row}\n"
+            else:
+                result += f"  {row},\n"
+        result += "]"
+        
+        return result
