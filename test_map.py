@@ -60,7 +60,6 @@ if __name__ == "__main__":
 
     print(f"Created {len(envs)} environments distributed across {len(config)} configurations")
     
-    # Tạo CSV file để lưu kết quả từng map
     csv_filename = 'test_results.csv'
     csv_headers = [
         'Map_ID', 'Size', 'NumWumpus', 'PitProb', 'Moving',
@@ -68,7 +67,6 @@ if __name__ == "__main__":
         'Random_Success', 'Random_Score', 'Random_Decision_Eff'
     ]
     
-    # Khởi tạo biến để tính tổng kết
     all_hybrid_successes = []
     all_hybrid_scores = []
     all_hybrid_steps = []
@@ -80,17 +78,12 @@ if __name__ == "__main__":
         writer = csv.writer(csvfile)
         writer.writerow(csv_headers)
         
-        # Chạy test cho từng environment
         for i, (env, env_config) in enumerate(zip(envs, env_configs)):
-            print(f"Testing environment {i+1}/{len(envs)}...")
             
-            # Test hybrid agent
             hybrid_success, hybrid_score, hybrid_time, hybrid_steps = run_test(env, HybridAgent)
             
-            # Test random agent
             random_success, random_score, random_time, random_steps = run_test(env, RandomAgent)
             
-            # Lưu vào danh sách để tính tổng kết
             all_hybrid_successes.append(hybrid_success)
             all_hybrid_scores.append(hybrid_score)
             all_hybrid_steps.append(hybrid_steps)
@@ -98,7 +91,6 @@ if __name__ == "__main__":
             all_random_scores.append(random_score)
             all_random_steps.append(random_steps)
             
-            # Ghi kết quả vào CSV
             row = [
                 i+1,  # Map_ID
                 env_config['Size'],
@@ -116,7 +108,6 @@ if __name__ == "__main__":
     
     print(f"Individual test results saved to '{csv_filename}'")
     
-    # Tính tổng kết trên 100 maps
     total_maps = len(envs)
     hybrid_summary = {
         "success_rate": sum(all_hybrid_successes) / total_maps,
@@ -130,7 +121,6 @@ if __name__ == "__main__":
         "avg_decision_eff": sum(all_random_steps) / total_maps
     }
     
-    # Ghi tổng kết vào JSON
     summary_results = {
         "total_environments": total_maps,
         "hybrid_agent": hybrid_summary,
@@ -141,17 +131,4 @@ if __name__ == "__main__":
     json_filename = 'test_summary.json'
     with open(json_filename, 'w', encoding='utf-8') as jsonfile:
         json.dump(summary_results, jsonfile, indent=4)
-    
-    print(f"Summary results saved to '{json_filename}'")
-    
-    # In kết quả tổng kết
-    print("\n=== SUMMARY RESULTS ===")
-    print(f"Total environments tested: {total_maps}")
-    print(f"\nHybrid Agent:")
-    print(f"  Success Rate: {hybrid_summary['success_rate']:.3f}")
-    print(f"  Average Score: {hybrid_summary['avg_score']:.2f}")
-    print(f"  Average Decision Efficiency: {hybrid_summary['avg_decision_eff']:.2f}")
-    print(f"\nRandom Agent:")
-    print(f"  Success Rate: {random_summary['success_rate']:.3f}")
-    print(f"  Average Score: {random_summary['avg_score']:.2f}")
-    print(f"  Average Decision Efficiency: {random_summary['avg_decision_eff']:.2f}")
+   

@@ -1,0 +1,4 @@
+Map_ID,Size,NumWumpus,Moving,Hybrid_Success,Hybrid_Score,Hybrid_Decision_Eff
+1,8,3,False,1,990,22
+2,10,3,False,1,953,59
+3,15,4,True,0,-1119,119

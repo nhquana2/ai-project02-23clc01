@@ -47,17 +47,19 @@ class AgentState:
     win: bool = False
 
 class Environment:
-    def __init__(self, size: int = 8, num_wumpus: int = 2, pit_prob: float = 0.2, moving_wumpus_mode: bool = False, seed: int = None):
+    def __init__(self, size: int = 8, num_wumpus: int = 2, pit_prob: float = 0.2, moving_wumpus_mode: bool = False, seed: int = None, world_matrix: List[List[str]] = None):
         self.size = size
         self.num_wumpus = num_wumpus
         self.pit_prob = pit_prob
         self.moving_wumpus_mode = moving_wumpus_mode 
         self.agent_action_count = 0
         self.seed = seed
+        self.world_matrix = world_matrix
         if seed is not None:
             random.seed(seed)
         self.reset()
 
+  
     def reset(self):
         self.wumpus_positions = set()
         self.pit_positions = set()
@@ -65,7 +67,11 @@ class Environment:
         self.agent_state = AgentState()
         self.agent_action_count = 0  # Reset action counter
         self.wumpus_directions = {}  # Track direction for each wumpus position
-        self._generate_world()
+        
+        if self.world_matrix is not None:
+            self._generate_world_from_matrix()
+        else:
+            self._generate_world()
     
     def _generate_world(self):
         # Generate wumpus
@@ -87,6 +93,35 @@ class Environment:
         available_positions = [(x, y) for x in range(self.size) for y in range(self.size) 
         if (x, y) not in self.wumpus_positions and (x, y) not in self.pit_positions]
         self.gold_position = random.choice(available_positions)
+
+    def _generate_world_from_matrix(self):
+
+        
+        matrix_size = len(self.world_matrix)
+        if matrix_size != self.size:
+            self.size = matrix_size  # Update size to match matrix
+            
+
+        
+        # Parse matrix and populate world
+        for y in range(matrix_size):
+            for x in range(matrix_size):
+                cell = self.world_matrix[y][x].upper()
+                
+                if cell == 'W':
+                    self.wumpus_positions.add((x, matrix_size - 1 - y))  # Flip Y coordinate
+                    # Initialize wumpus direction randomly
+                    self.wumpus_directions[(x, matrix_size - 1 - y)] = random.choice(list(Direction))
+                elif cell == 'P':
+                    self.pit_positions.add((x, matrix_size - 1 - y))  # Flip Y coordinate
+                elif cell == 'G':
+                    if self.gold_position is not None:
+                        print("Warning: Multiple gold positions found, using the last one")
+                    self.gold_position = (x, matrix_size - 1 - y)  # Flip Y coordinate
+        
+        
+        self.num_wumpus = len(self.wumpus_positions)
+        
 
     def get_percept(self) -> Percept:
         percept = Percept()
