@@ -37,7 +37,6 @@ class HybridAgent:
 
             if action == Action.SHOOT:
                 self.inference_engine.reset_kb()  # Reset KB after shooting
-                self.knowledge.mark_not_wumpus_positions(self.environment.no_wumpus_line)
             
             # Reset KB
             if self.environment.moving_wumpus_mode and self.environment.agent_action_count > 0 and self.environment.agent_action_count % 5 == 0:

@@ -242,10 +242,6 @@ class GameController:
         # Execute agent action
         agent.think(percepts)
 
-        print("debug cell 0,2", agent.knowledge.get_cell(0, 2))
-        print("debug cell 0,3", agent.knowledge.get_cell(0, 3))
-        print("debug cell 0,4", agent.knowledge.get_cell(0, 4))
-
         if not agent.action_plan:
             print("No more actions available")
             return step_count, last_step_time, False
@@ -281,7 +277,6 @@ class GameController:
         
         if action == Action.SHOOT:
             agent.inference_engine.reset_kb()  # Reset KB after shooting
-            # Immediately refresh board to reflect knowledge changes from the shot
             board.update(env, agent.knowledge)
             
 
