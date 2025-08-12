@@ -42,7 +42,7 @@ if __name__ == "__main__":
     with open('map/map.json', 'r') as f:
         config = json.load(f)
 
-    num_env = 12
+    num_env = 250
     envs_per_config = num_env // len(config)
     
     envs = []
@@ -60,25 +60,29 @@ if __name__ == "__main__":
 
     print(f"Created {len(envs)} environments distributed across {len(config)} configurations")
 
-    csv_filename = 'results/test_results_random.csv'
+    csv_filename = 'results/comparison_results.csv'
     csv_headers = [
         'Map_ID', 'Size', 'NumWumpus', 'PitProb', 'Moving',
-        'Hybrid_Success', 'Hybrid_Score', 'Hybrid_Decision_Eff',
-        'Random_Success', 'Random_Score', 'Random_Decision_Eff'
+        'Hybrid_Success', 'Hybrid_Score', 'Hybrid_Decision_Eff', 'Hybrid_Time_ms',
+        'Random_Success', 'Random_Score', 'Random_Decision_Eff', 'Random_Time_ms'
     ]
     
     all_hybrid_successes = []
     all_hybrid_scores = []
     all_hybrid_steps = []
+    all_hybrid_times = []
     all_random_successes = []
     all_random_scores = []
     all_random_steps = []
+    all_random_times = []
     
     with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(csv_headers)
         
         for i, (env, env_config) in enumerate(zip(envs, env_configs)):
+
+            print(f"Running test {i+1}/{len(envs)}: {env_config}")
             
             hybrid_success, hybrid_score, hybrid_time, hybrid_steps = run_test(env, HybridAgent)
             
@@ -87,9 +91,11 @@ if __name__ == "__main__":
             all_hybrid_successes.append(hybrid_success)
             all_hybrid_scores.append(hybrid_score)
             all_hybrid_steps.append(hybrid_steps)
+            all_hybrid_times.append(hybrid_time)
             all_random_successes.append(random_success)
             all_random_scores.append(random_score)
             all_random_steps.append(random_steps)
+            all_random_times.append(random_time)
             
             row = [
                 i+1,  # Map_ID
@@ -100,9 +106,11 @@ if __name__ == "__main__":
                 hybrid_success,    # Success (0 or 1)
                 hybrid_score,      # Score
                 hybrid_steps,      # Decision efficiency (step count)
+                round(hybrid_time * 1000, 6),       # Time taken in milliseconds (rounded to 6 decimal places)
                 random_success,
                 random_score,
-                random_steps
+                random_steps,
+                round(random_time * 1000, 6)        # Time taken in milliseconds (rounded to 6 decimal places)
             ]
             writer.writerow(row)
     
@@ -112,13 +120,15 @@ if __name__ == "__main__":
     hybrid_summary = {
         "success_rate": sum(all_hybrid_successes) / total_maps,
         "avg_score": sum(all_hybrid_scores) / total_maps,
-        "avg_decision_eff": sum(all_hybrid_steps) / total_maps
+        "avg_decision_eff": sum(all_hybrid_steps) / total_maps,
+        "avg_time": sum(all_hybrid_times) / total_maps
     }
     
     random_summary = {
         "success_rate": sum(all_random_successes) / total_maps,
         "avg_score": sum(all_random_scores) / total_maps,
-        "avg_decision_eff": sum(all_random_steps) / total_maps
+        "avg_decision_eff": sum(all_random_steps) / total_maps,
+        "avg_time": sum(all_random_times) / total_maps
     }
     
     summary_results = {
@@ -128,7 +138,7 @@ if __name__ == "__main__":
         "test_configurations": config
     }
     
-    json_filename = 'test_summary.json'
+    json_filename = 'results/comparison_summary.json'
     with open(json_filename, 'w', encoding='utf-8') as jsonfile:
         json.dump(summary_results, jsonfile, indent=4)
    

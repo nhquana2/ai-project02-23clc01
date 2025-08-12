@@ -1,26 +1,32 @@
 [
     {
         "Size": 8,
-        "NumWumpus": 2,
-        "PitProb": 0.2,
+        "NumWumpus": 1,
+        "PitProb": 0.1,
         "Moving": false
     }, 
     {
         "Size": 8,
         "NumWumpus": 2,
         "PitProb": 0.2,
+        "Moving": false
+    },
+    {
+        "Size": 8,
+        "NumWumpus": 2,
+        "PitProb": 0.1,
         "Moving": true
     },
     {
         "Size": 10,
-        "NumWumpus": 3,
-        "PitProb": 0.3,
+        "NumWumpus": 2,
+        "PitProb": 0.1,
         "Moving": false
     },
     {
         "Size": 10,
-        "NumWumpus": 3,
-        "PitProb": 0.3,
+        "NumWumpus": 1,
+        "PitProb": 0.05,
         "Moving": true
     }
 ]
