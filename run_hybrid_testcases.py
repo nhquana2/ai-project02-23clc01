@@ -70,8 +70,7 @@ def run_test(env: Environment, agent_class) -> Tuple[int, int, float, int]:
 
 if __name__ == "__main__":
 
-    num_env = 3
-
+    num_env = 5 # Change this when adding more test cases
     envs = []
 
     for i in range(num_env):    
@@ -86,7 +85,7 @@ if __name__ == "__main__":
     all_hybrid_steps = []
 
 
-    csv_filename = 'results/test_results_hybrid.csv'
+    csv_filename = 'results/testcases_results_hybrid.csv'
 
     csv_headers = [
         'Map_ID', 'Size', 'NumWumpus', 'Moving',
@@ -117,9 +116,6 @@ if __name__ == "__main__":
             with open(final_map_state_path, "w") as final_map_file:
                 final_map_file.write(final_map_state)
 
-
-
-
             row = [
                 i + 1,  # Map_ID
                 env.size,
@@ -133,7 +129,7 @@ if __name__ == "__main__":
             writer.writerow(row)
 
     
-    sum_file_path = "results/test_summary.json"
+    sum_file_path = "results/testcases_results_summary.json"
     total_maps = len(envs)
 
     hybrid_summary = {
