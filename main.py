@@ -42,7 +42,9 @@ def initialize_pygame():
     """Initialize pygame and set up the display"""
     print("Wumpus World Auto Solver with Visualization")
     pygame.init()
-    initial_width, initial_height = HEIGHT, WIDTH
+    initial_width, initial_height = WIDTH, HEIGHT
+
+
     screen = pygame.display.set_mode((initial_width, initial_height))
     pygame.display.set_caption("Wumpus World")
     return screen
