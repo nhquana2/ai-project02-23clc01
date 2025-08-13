@@ -102,10 +102,3 @@ class RandomAgent:
         
         # Update alive status from environment
         self.state.alive = self.environment.agent_state.alive
-        
-    def get_strategy_info(self) -> str:
-        """Return information about current strategy"""
-        if self.state.has_gold:
-            return "Random: Has gold, acting randomly"
-        else:
-            return "Random: Acting completely randomly"
