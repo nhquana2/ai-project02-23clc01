@@ -1,97 +1,196 @@
-# Project 2: Wumpus World Agent - Class of Introduction to Artificial Intelligence
+<div align="center">
+  <img src="assets/images/wumpus/wumpus_down.png" width="112" alt="Wumpus World icon">
+
+  <h1>Wumpus World AI Agent</h1>
+
+  <p><strong>A knowledge-based autonomous agent that combines propositional logic, DPLL inference, and A* planning to solve static and dynamic Wumpus World environments.</strong></p>
+
+  <p>
+    <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white" alt="Python 3.10+">
+    <img src="https://img.shields.io/badge/GUI-Pygame-2C2D72?logo=python&logoColor=white" alt="Pygame GUI">
+    <img src="https://img.shields.io/badge/AI-DPLL%20%2B%20A*-6f42c1" alt="DPLL and A-star">
+    <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2ea44f" alt="MIT License"></a>
+  </p>
+
+  <p>
+    <a href="#demo">Demo</a> ·
+    <a href="#how-it-works">How it works</a> ·
+    <a href="#benchmark-results">Results</a> ·
+    <a href="#getting-started">Getting started</a> ·
+    <a href="Report.pdf">Project report</a>
+  </p>
+</div>
+
+![Wumpus World AI Agent demo](docs/media/demo.gif)
+
+## Overview
+
+Wumpus World is a partially observable environment in which an agent must find the gold and return safely while avoiding pits and Wumpuses. The agent never receives the complete map directly: it must reason from local percepts such as **Breeze**, **Stench**, **Glitter**, **Bump**, and **Scream**.
+
+This project implements a hybrid agent that turns those percepts into logical knowledge, classifies cells by risk, and plans actions toward a safe objective. A Pygame interface visualizes the environment, the agent's inferred knowledge, current percepts, score, and actions in real time.
+
+## Highlights
+
+- **Knowledge-based reasoning** - maintains a symbolic model of safe, unknown, pit, and Wumpus cells.
+- **Propositional inference** - uses a custom DPLL SAT solver to test whether the knowledge base entails a conclusion.
+- **Goal-directed planning** - applies A* search to reach safe exploration targets and return to the entrance.
+- **Risk-aware exploration** - chooses the least risky unknown cell when no confirmed-safe frontier remains.
+- **Static and dynamic worlds** - supports multiple Wumpuses, configurable pit density, and moving Wumpuses.
+- **Interactive visualization** - displays percepts, knowledge overlays, score, agent state, and arrow trajectories.
+- **Measured baseline** - compares the Hybrid Agent against a Random Agent over 250 generated environments.
+
+## Demo
+
+The animation above is generated from the actual Pygame renderer using the deterministic `testcases/map1.json` scenario. It shows the Hybrid Agent exploring the map, updating its knowledge, collecting the gold, returning to the entrance, and climbing out with a final score of **990**.
+
+| Configuration menu | Knowledge-based exploration |
+| :---: | :---: |
+| ![Configuration menu](docs/media/main-menu.png) | ![Hybrid Agent exploring](docs/media/agent-exploration.png) |
+
+| Inferred safe cells and percepts | Dynamic Wumpus mode |
+| :---: | :---: |
+| ![Knowledge visualization](docs/media/knowledge-visualization.png) | ![Dynamic Wumpus environment](docs/media/dynamic-wumpus.png) |
+
+Legend used by the knowledge overlay:
+
+- `OK` - inferred safe cell
+- `P` - inferred pit
+- `W` - inferred Wumpus
+- `?` - unknown cell
+- `B/b` - Breeze observed / not observed
+- `S/s` - Stench observed / not observed
+
+## How it works
+
+```mermaid
+flowchart LR
+    E[Wumpus World<br>Environment] -->|Breeze, Stench,<br>Glitter, Bump, Scream| K[Knowledge Base]
+    K --> D[DPLL Entailment]
+    D --> C[Cell Classification<br>Safe / Pit / Wumpus / Unknown]
+    C --> P[A* and Risk-aware<br>Planner]
+    P -->|Forward, Turn,<br>Grab, Shoot, Climb| E
+```
+
+1. **Observe** - the environment returns percepts for the agent's current cell.
+2. **Update knowledge** - visited cells and percepts are encoded as propositional clauses.
+3. **Infer** - DPLL satisfiability checks determine which hazards or safe cells are logically entailed.
+4. **Select a target** - the agent prioritizes unvisited safe cells, known Wumpuses, or a least-risk unknown cell.
+5. **Plan and act** - A* produces movement actions while the shooting planner aligns the agent with a known Wumpus.
+6. **Complete the mission** - after grabbing the gold, the agent plans a route back to `(0, 0)` and climbs out.
+
+In Dynamic mode, Wumpuses move every five agent actions. Wumpus-related knowledge is then invalidated and rebuilt while static pit knowledge is retained.
+
+## Benchmark results
+
+The committed benchmark evaluates the Hybrid and Random agents on five configurations spanning `8×8` and `10×10` boards, one or two Wumpuses, `5–20%` pit probabilities, and both static and moving-Wumpus modes.
+
+| Agent | Success rate | Average score |
+| :--- | ---: | ---: |
+| **Hybrid Agent** | **55.6%** | **70.832** |
+| Random Agent | 2.0% | -278.868 |
+
+The Hybrid Agent improves the absolute success rate by **53.6 percentage points** over the random baseline. Raw per-environment results and the aggregate summary are available in [`results/comparison_results.csv`](results/comparison_results.csv) and [`results/comparison_summary.json`](results/comparison_summary.json).
+
+## Getting started
+
+### Prerequisites
+
+- Python 3.10 or newer
+- Git
+
+### Installation
+
+```bash
+git clone https://github.com/nhquana2/ai-project02-23clc01.git
+cd ai-project02-23clc01
+
+python -m venv .venv
+```
+
+Activate the virtual environment:
+
+```powershell
+# Windows PowerShell
+.\.venv\Scripts\Activate.ps1
+```
+
+```bash
+# macOS or Linux
+source .venv/bin/activate
+```
+
+Install the dependency and launch the GUI:
+
+```bash
+pip install -r requirements.txt
+python main.py
+```
+
+From the menu, choose:
+
+- `STATIC` or `DYNAMIC` environment mode
+- `DEFAULT` (Hybrid) or `RANDOM` agent
+- board size, pit probability, and Wumpus count
+
+Then select **START GAME**. Press `Esc` or use the on-screen button to pause.
+
+## Reproducing the experiments
+
+Run the randomized Hybrid-versus-Random benchmark:
+
+```bash
+python run_comparison.py
+```
+
+Run the five predefined scenarios from `testcases/`:
+
+```bash
+python run_hybrid_testcases.py
+```
+
+Generated metrics, action logs, and final map states are written to `results/`.
+
 ## Project structure
 
-```
+```text
 ai-project02-23clc01/
-├── assets/                  # All visual assets for the GUI
-│   ├── buttons/             # Button sprites
-│   ├── font/                # Bitmap font for text rendering
-│   └── images/              # Game sprites
-├── gui/                     # Pygame-based GUI
-│   ├── board/               # Modules for rendering the game board
-│   │   ├── background_renderer.py
-│   │   ├── board_compositor.py
-│   │   ├── entity_renderer.py
-│   │   ├── image_manager.py
-│   │   └── knowledge_renderer.py
-│   ├── menu/                # Modules for the main menu and UI elements
-│   │   ├── button.py
-│   │   ├── menu_compositor.py
-│   │   ├── menu_logic.py
-│   │   └── menu_ui.py
-│   ├── game_controller.py   # Main game loop and event handling
-│   └── info_panel.py        # UI panel for displaying game state and percepts
-├── map/                     # Map configuration files
-│   └── map.json             # Environment configurations for testing
-├── results/                 # Test results and performance analysis
-│   ├── comparison_results.csv        # Performance comparison data
-│   ├── comparison_summary.json       # Summary of agent comparisons
-│   ├── testcases_results_hybrid.csv  # Hybrid agent test results
-│   ├── testcases_results_summary.json # Test summary statistics
-│   ├── final_map_state_*.txt        # Final game states for each map
-│   └── log_*.txt                    # Action logs for each test map
-├── testcases/               # Predefined test cases
-│   └── map*.json            # A test map
-├── agent_knowledge.py       # Represents the agent's knowledge about the world
-├── environment.py           # Wumpus World Environment simulator
-├── hybrid_agent.py          # The main intelligent agent 
-├── inference_engine.py      # Inference engine using propositional logic
-├── inference.py             # DPLL algorithm and knowledge base implementation
-├── planning.py              # Pathfinding module using A*
-├── random_agent.py          # Random agent
-├── run_comparison.py        # Script to compare hybrid vs random agent performance
-├── run_hybrid_testcases.py  # Script to run hybrid agent on predefined test cases
-├── test.py                  # For testing, debugging code
-├── main.py                  # Entry-point that launches the GUI
-├── requirements.txt         # Python dependencies
-└── README.md                # You are here
+├── assets/                  # Sprites, fonts, backgrounds, and buttons
+├── docs/media/              # README screenshots, GIF, and benchmark artwork
+├── gui/                     # Pygame menu, board, controller, and information panel
+├── map/                     # Random benchmark configurations
+├── results/                 # Metrics, action logs, and final map states
+├── testcases/               # Deterministic evaluation maps
+├── agent_knowledge.py       # Symbolic world model
+├── environment.py           # Wumpus World simulator and action semantics
+├── hybrid_agent.py          # Knowledge-based agent policy
+├── inference.py             # DPLL SAT solver and knowledge base
+├── inference_engine.py      # Percept-to-clause inference rules
+├── planning.py              # A* and risk-aware planning
+├── random_agent.py          # Baseline policy
+├── run_comparison.py        # Randomized agent comparison
+├── run_hybrid_testcases.py  # Deterministic scenario runner
+└── main.py                  # GUI entry point
 ```
-### Key modules & classes (high-level)
 
-* `environment.py` – WumpusWorld class that models the N×N grid, manages game elements (Pits, Wumpus, Gold), and provides percepts to the agent.
-* `hybrid_agent.py` – The main HybridAgent that integrates inference and planning to make intelligent decisions.
-* `inference_engine.py` – Implements the agent's logic for deducing the status of cells (safe, dangerous, unknown) based on known rules and incoming percepts.
-* `inference.py` – Core inference module implementing the DPLL algorithm for satisfiability checking and knowledge base operations.
-* `planning.py` – Implements search algorithms to find the safest and most efficient path.
-* `random_agent.py` – A baseline agent that makes random moves for performance comparison.
-* `agent_knowledge.py` – Manages the agent's beliefs and knowledge representation about the world state.
-* `run_comparison.py` – Performance comparison script that benchmarks the hybrid agent against the random agent across multiple randomized environments (using map/map.json config file).
-* `run_hybrid_testcases.py` – Test runner for evaluating the hybrid agent on predefined scenarios with action logging and final map state output.
-* `test.py` – Development and debugging script for testing individual components and functionality.
-* `gui/game_controller.py` – The central component of the GUI: the main game loop, rendering, and user input.
-* `gui/board/` & `gui/menu/` – Specialized sub-packages that handle all visual aspects of the game board and user interface menus.
-* `assets/` – Contains all the necessary visual components (sprites, fonts, buttons) required by the GUI.
-* `map/` – Contains environment configuration files for different testing scenarios.
-* `testcases/` – Predefined test maps with specific layouts for consistent evaluation.
-* `results/` – Generated output directory containing performance metrics, logs, and analysis data from test runs.
+## Limitations and future work
 
----
+- DPLL inference becomes increasingly expensive as the board and knowledge base grow.
+- The visualization currently targets a desktop Pygame runtime rather than a browser deployment.
+- Dynamic Wumpuses require periodic invalidation of Wumpus-specific knowledge.
+- Future improvements could add incremental SAT solving, deterministic replay controls, automated test coverage, and CI benchmark reports.
 
-## Installation & Running
+## Contributors
 
-> Requires **Python ≥ 3.10**
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/nhquana2/ai-project02-23clc01.git
-   cd ai-project02-23clc01
-   ```
-2. (Optional) create a virtual environment with python venv or conda:
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate   # Windows: .venv\Scripts\activate
-   ```
+- Nguyễn Hoàng Quân
+- Nguyen Tuấn Anh
+- Trần Tiến Cường
+- Thái Hoàng Phúc
 
-   ```bash
-   conda create -n wumpusworld python==3.10
-   conda activate wumpusworld
-   ```
+## Report
 
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. Launch the GUI:
-   ```bash
-   python main.py
-   ```
+The design, knowledge representation, inference rules, experiments, and discussion are documented in the [project report](Report.pdf).
+
+## License
+
+This project is available under the [MIT License](LICENSE).
